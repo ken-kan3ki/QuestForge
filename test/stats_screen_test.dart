@@ -31,8 +31,8 @@ void main() {
     // Progression
     expect(find.text('Character Progression'), findsOneWidget);
     expect(find.text('Level 1'), findsOneWidget);
-    expect(find.text('0 / 100 XP (0.0%)'), findsOneWidget);
-    expect(find.text('100 XP needed to reach Level 2'), findsOneWidget);
+    expect(find.text('0 / 23 XP (0.0%)'), findsOneWidget);
+    expect(find.text('23 XP needed to reach Level 2'), findsOneWidget);
 
     // Streaks
     expect(find.text('Streaks & Multipliers'), findsOneWidget);
@@ -66,9 +66,10 @@ void main() {
 
     await pumpStatsScreen(tester, controller);
 
-    // Level progress reflects 50 XP
-    expect(find.text('50 / 100 XP (50.0%)'), findsOneWidget);
-    expect(find.text('50 XP needed to reach Level 2'), findsOneWidget);
+    // Level progress reflects 50 XP (advancing to Level 3)
+    expect(find.text('Level 3'), findsOneWidget);
+    expect(find.text('0 / 31 XP (0.0%)'), findsOneWidget);
+    expect(find.text('31 XP needed to reach Level 4'), findsOneWidget);
 
     // Streak shows 1 day
     expect(find.text('1'), findsWidgets);
