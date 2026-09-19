@@ -4,7 +4,6 @@ import 'package:prod/models/avatar_progression.dart';
 import 'package:prod/models/avatar_tier.dart';
 import 'package:prod/screens/character_screen.dart';
 import 'package:prod/services/avatar_engine.dart';
-import 'package:prod/services/level_engine.dart';
 import 'package:prod/services/task_repository.dart';
 import 'package:prod/services/xp_ledger.dart';
 import 'package:prod/state/task_controller.dart';
@@ -132,7 +131,7 @@ void main() {
       );
 
       expect(find.byType(PlayerAvatar), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Lv 3'), findsOneWidget);
     });
 
     testWidgets('CharacterScreen displays avatar progression title, level, and evolution progress', (tester) async {
