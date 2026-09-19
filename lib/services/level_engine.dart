@@ -202,7 +202,7 @@ class LevelEngine {
     if (lvl >= maxLevel) {
       final floor = totalXpRequiredForLevel(maxLevel);
       final span = requiredXpForLevel(maxLevel - 1);
-      final intoLevel = xp - floor;
+      // XP into current level is the full span at max level (always 100%)
       return LevelProgress(
         level: maxLevel,
         totalXp: xp,

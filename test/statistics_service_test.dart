@@ -29,7 +29,7 @@ void main() {
       expect(stats.currentLevel, 1);
       expect(stats.levelProgress.totalXp, 0);
       expect(stats.levelProgress.progressToNextLevel, 0.0);
-      expect(stats.levelProgress.xpToNextLevel, 100);
+      expect(stats.levelProgress.xpToNextLevel, 23);
 
       expect(stats.recentDailyActivity.length, 7);
       for (final dayStat in stats.recentDailyActivity) {
@@ -170,9 +170,10 @@ void main() {
       // All-time: txToday(50) + txEarlierThisWeek(40) + txLastWeek(60) = 150
       expect(stats.totalXpAllTime, 150);
 
-      // Level progress for 150 XP (Level 1: 100 XP -> Level 2 reached with 50 XP into Level 2)
-      expect(stats.currentLevel, 2);
-      expect(stats.levelProgress.xpIntoCurrentLevel, 50);
+      // Level progress for 150 XP
+      // Cumulative: L1=23, L2=27, L3=31, L4=35, L5=40 => level 5 floor=116, into=34
+      expect(stats.currentLevel, 5);
+      expect(stats.levelProgress.xpIntoCurrentLevel, 34);
     });
   });
 

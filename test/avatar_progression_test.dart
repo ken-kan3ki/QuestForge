@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:prod/models/avatar_progression.dart';
 import 'package:prod/models/avatar_tier.dart';
 import 'package:prod/screens/character_screen.dart';
 import 'package:prod/services/avatar_engine.dart';
@@ -106,7 +107,7 @@ void main() {
 
   group('Avatar Progression UI Integration', () {
     testWidgets('PlayerAvatar renders level badge and icon without errors', (tester) async {
-      const progression = AvatarProgression(
+      final progression = AvatarProgression(
         tier: AvatarTier.yowaimo,
         title: 'Yowaimo',
         level: 3,
@@ -119,7 +120,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
             body: PlayerAvatar(
               size: 96,
