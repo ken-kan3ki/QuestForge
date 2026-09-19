@@ -173,12 +173,12 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 segments: const [
                   ButtonSegment(
                     value: QuestType.habit,
-                    label: Text('Habit'),
+                    label: Text('Character Arc'),
                     icon: Icon(Icons.replay),
                   ),
                   ButtonSegment(
                     value: QuestType.sideQuest,
-                    label: Text('Side Quest'),
+                    label: Text('Side Hustle'),
                     icon: Icon(Icons.flag_outlined),
                   ),
                 ],

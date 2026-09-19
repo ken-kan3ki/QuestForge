@@ -1,3 +1,5 @@
+import '../core/constants/game_constants.dart';
+
 class TaskValidationResult {
   const TaskValidationResult({
     this.titleError,
@@ -11,7 +13,13 @@ class TaskValidationResult {
 }
 
 class TaskValidator {
-  const TaskValidator();
+  const TaskValidator({
+    this.minXp = GameConstants.minCustomXp,
+    this.maxXp = GameConstants.maxCustomXp,
+  });
+
+  final int minXp;
+  final int maxXp;
 
   TaskValidationResult validate({
     required String title,
@@ -35,15 +43,18 @@ class TaskValidator {
     if (parsed == null) {
       return 'Enter a whole number for the XP reward.';
     }
-    if (parsed <= 0) {
-      return 'XP reward must be greater than 0.';
+    if (parsed < minXp) {
+      return 'XP reward must be at least $minXp.';
+    }
+    if (parsed > maxXp) {
+      return 'XP reward cannot exceed $maxXp.';
     }
     return null;
   }
 
   int parseXp(String xpText) {
     final parsed = int.tryParse(xpText.trim());
-    if (parsed == null || parsed <= 0) {
+    if (parsed == null || parsed < minXp || parsed > maxXp) {
       throw FormatException('Invalid XP reward: $xpText');
     }
     return parsed;

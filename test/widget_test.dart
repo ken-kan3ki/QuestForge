@@ -50,13 +50,13 @@ void main() {
       find.byKey(const Key('task-description-field')),
       'Leg day',
     );
-    await tester.enterText(find.byKey(const Key('task-xp-field')), '20');
+    await tester.enterText(find.byKey(const Key('task-xp-field')), '50');
     await tester.tap(find.byKey(const Key('save-task')));
     await tester.pumpAndSettle();
 
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Leg day'), findsOneWidget);
-    expect(find.text('20 XP'), findsOneWidget);
+    expect(find.text('50 XP'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Mark complete'));

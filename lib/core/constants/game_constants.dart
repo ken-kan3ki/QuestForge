@@ -4,23 +4,29 @@
 /// are defined in a single location rather than scattered as magic numbers.
 abstract final class GameConstants {
   // ── Quest XP Difficulties ───────────────────────────────────────────────────
-  /// XP awarded for an Easy quest (e.g. drinking water, quick stretch).
-  static const int xpEasy = 10;
+  /// XP awarded for a Small quest (e.g. quick chore, drinking water).
+  static const int xpSmall = 25;
 
-  /// XP awarded for a Normal quest (e.g. 30min walk, quick chore).
-  static const int xpNormal = 20;
+  /// XP awarded for a Normal quest (e.g. 30min walk, normal workout).
+  static const int xpNormal = 50;
 
-  /// XP awarded for a Hard quest (e.g. gym workout, focused study session).
-  static const int xpHard = 35;
+  /// XP awarded for a Large quest (e.g. focused study session, large task).
+  static const int xpLarge = 100;
 
   /// XP awarded for a Major quest (e.g. exam, project milestone).
-  static const int xpMajor = 50;
+  static const int xpMajor = 150;
+
+  /// Minimum custom XP allowed for tasks.
+  static const int minCustomXp = 25;
+
+  /// Maximum custom XP allowed for tasks.
+  static const int maxCustomXp = 500;
 
   /// Map of difficulty labels to their respective base XP values.
   static const Map<String, int> difficultyXpMap = {
-    'Easy': xpEasy,
+    'Small': xpSmall,
     'Normal': xpNormal,
-    'Hard': xpHard,
+    'Large': xpLarge,
     'Major': xpMajor,
   };
 
@@ -35,9 +41,9 @@ abstract final class GameConstants {
   static const double maxStreakMultiplier = 1.50;
 
   // ── Level Progression Curve ────────────────────────────────────────────────
-  /// Base XP width of level 1 (XP required to reach level 2).
-  static const int defaultBaseXp = 100;
+  /// Starting level for a player.
+  static const int minLevel = 1;
 
-  /// Geometric growth factor applied to each successive level width.
-  static const double defaultGrowthFactor = 1.5;
+  /// Maximum level cap (Level 100 is the final level).
+  static const int maxLevel = 100;
 }

@@ -1,25 +1,20 @@
 import 'package:flutter/material.dart';
 
-/// Supported avatar progression tiers.
+/// Supported avatar progression tiers for the exact 100-level RPG system.
 enum AvatarTier {
-  yoyaimo,
+  yowaimo,
   karen,
+  skinny,
   npc,
-  broIsTrying,
-  lockIn,
-  grinder,
-  based,
-  chadApprentice,
-  chad,
   sigma,
-  sigmaGrindset,
   alpha,
-  gigaChad,
-  ultraChad,
-  him,
-  builtDifferent,
-  finalBoss,
-  productivityDemon,
+  gigachad,
+  superSaiyan,
+  superSaiyanGod;
+
+  /// Backward-compatibility aliases for existing test or UI references.
+  static const AvatarTier yoyaimo = AvatarTier.yowaimo;
+  static const AvatarTier gigaChad = AvatarTier.gigachad;
 }
 
 /// Metadata definition for an [AvatarTier], holding all tier thresholds,
@@ -29,7 +24,7 @@ class AvatarTierDefinition {
     required this.tier,
     required this.title,
     required this.minLevel,
-    this.maxLevel,
+    required this.maxLevel,
     required this.icon,
     required this.badgeSymbol,
     required this.gradientColors,
@@ -41,19 +36,19 @@ class AvatarTierDefinition {
   /// The enum identifier for this tier.
   final AvatarTier tier;
 
-  /// Fun display title (e.g. 'GigaChad', 'Productivity Demon').
+  /// Fun display title (e.g. 'Gigachad', 'Super Saiyan God').
   final String title;
 
   /// Minimum level required for this tier (inclusive).
   final int minLevel;
 
-  /// Maximum level for this tier (inclusive), or `null` if unbounded (final tier).
-  final int? maxLevel;
+  /// Maximum level for this tier (inclusive).
+  final int maxLevel;
 
   /// Primary icon representing this avatar tier visually.
   final IconData icon;
 
-  /// Optional short badge marker for this tier (legacy; UI uses character art).
+  /// Optional short badge marker for this tier.
   final String badgeSymbol;
 
   /// Gradient colors for the avatar's circular backdrop.
@@ -71,7 +66,7 @@ class AvatarTierDefinition {
   /// Returns whether a given [level] falls within this tier's bounds.
   bool containsLevel(int level) {
     if (level < minLevel) return false;
-    if (maxLevel != null && level > maxLevel!) return false;
+    if (level > maxLevel) return false;
     return true;
   }
 }

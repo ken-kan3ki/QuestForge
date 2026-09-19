@@ -89,8 +89,8 @@ class TaskTile extends StatelessWidget {
                             ? Icons.replay
                             : Icons.flag_outlined,
                         label: task.questType == QuestType.habit
-                            ? 'Habit'
-                            : 'Side Quest',
+                            ? 'Character Arc'
+                            : 'Side Hustle',
                       ),
                       if (task.isHabit && task.recurrence != null)
                         _MetaChip(

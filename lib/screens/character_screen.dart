@@ -366,6 +366,11 @@ class _XpProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMaxLevel = progress.level >= LevelEngine.maxLevel;
+    final clampedProgress = progress.progressToNextLevel.clamp(0.0, 1.0);
+    final percentText =
+        isMaxLevel ? '100%' : '${(clampedProgress * 100).toStringAsFixed(1)}%';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -374,14 +379,16 @@ class _XpProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP',
+              isMaxLevel
+                  ? '${progress.xpSpanForCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP'
+                  : '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
             Text(
-              '${(progress.progressToNextLevel * 100).toStringAsFixed(1)}%',
+              percentText,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.primary,
                 fontWeight: FontWeight.w700,
@@ -395,7 +402,7 @@ class _XpProgressBar extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
-            value: progress.progressToNextLevel,
+            value: clampedProgress,
             minHeight: 12,
             backgroundColor: colors.outlineVariant.withValues(alpha: 0.20),
             valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
@@ -405,7 +412,9 @@ class _XpProgressBar extends StatelessWidget {
 
         // next-level hint
         Text(
-          '${progress.xpToNextLevel} XP to level ${progress.level + 1}',
+          isMaxLevel
+              ? 'MAX LEVEL'
+              : '${progress.xpToNextLevel} XP to level ${progress.level + 1}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colors.onSurfaceVariant,
           ),

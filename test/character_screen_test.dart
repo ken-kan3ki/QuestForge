@@ -31,8 +31,8 @@ void main() {
 
     expect(find.text('Level 1'), findsOneWidget);
     expect(find.text('0 XP earned'), findsOneWidget);
-    expect(find.text('100 XP to level 2'), findsOneWidget);
-    expect(find.text('0 / 100 XP'), findsOneWidget);
+    expect(find.text('23 XP to level 2'), findsOneWidget);
+    expect(find.text('0 / 23 XP'), findsOneWidget);
     expect(find.text('0.0%'), findsOneWidget);
   });
 
@@ -52,41 +52,34 @@ void main() {
       clock: () => now,
     );
 
-    controller.createTask(title: 'Read a book', xpReward: 50);
+    // 25 XP task: 23 XP to reach level 2, leaves 2 XP into level 2 (span 27)
+    controller.createTask(title: 'Read a book', xpReward: 25);
     final task = controller.activeTasks.first;
     controller.completeTask(task.id, completedAt: now);
 
     await pumpCharacterScreen(tester, controller);
 
-    // 50 XP with 1.0× multiplier = 50 XP total → still level 1
-    expect(find.text('Level 1'), findsOneWidget);
-    expect(find.text('50 XP earned'), findsOneWidget);
-    expect(find.text('50 / 100 XP'), findsOneWidget);
-    expect(find.text('50.0%'), findsOneWidget);
-    expect(find.text('50 XP to level 2'), findsOneWidget);
+    expect(find.text('Level 2'), findsOneWidget);
+    expect(find.text('25 XP earned'), findsOneWidget);
+    expect(find.text('2 / 27 XP'), findsOneWidget);
+    expect(find.text('25 XP to level 3'), findsOneWidget);
   });
 
-  testWidgets('reaches level 2 after earning 100+ XP', (tester) async {
+  testWidgets('reaches level 2 after earning 23+ XP', (tester) async {
     final now = DateTime(2026, 9, 12, 10, 0);
     final controller = TaskController(
       InMemoryTaskRepository(),
       clock: () => now,
     );
 
-    controller.createTask(title: 'Task A', xpReward: 60);
-    controller.createTask(title: 'Task B', xpReward: 60);
-
+    controller.createTask(title: 'Task A', xpReward: 25);
     final taskA = controller.activeTasks.first;
-    final taskB = controller.activeTasks.last;
-
     controller.completeTask(taskA.id, completedAt: now);
-    controller.completeTask(taskB.id, completedAt: now);
 
     await pumpCharacterScreen(tester, controller);
 
-    // 60 + 60 = 120 XP → level 2 (threshold at 100 XP)
     expect(find.text('Level 2'), findsOneWidget);
-    expect(find.text('120 XP earned'), findsOneWidget);
+    expect(find.text('25 XP earned'), findsOneWidget);
   });
 
   testWidgets('streak badge shows singular "day" for streak of 1',
@@ -97,7 +90,7 @@ void main() {
       clock: () => now,
     );
 
-    controller.createTask(title: 'Task', xpReward: 10);
+    controller.createTask(title: 'Task', xpReward: 25);
     controller.completeTask(
       controller.activeTasks.first.id,
       completedAt: now,

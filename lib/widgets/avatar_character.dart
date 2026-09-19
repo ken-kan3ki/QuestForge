@@ -337,7 +337,7 @@ class _AvatarCharacterPainter extends CustomPainter {
     final head = Offset(c.dx, c.dy - s * 0.16);
 
     switch (tier) {
-      case AvatarTier.yoyaimo:
+      case AvatarTier.yowaimo:
         final stem = Paint()
           ..color = const Color(0xFF48BB78)
           ..strokeWidth = s * 0.018
@@ -395,20 +395,7 @@ class _AvatarCharacterPainter extends CustomPainter {
             ..color = const Color(0xFF1A202C)
             ..strokeWidth = s * 0.012,
         );
-      case AvatarTier.npc:
-        final q = TextPainter(
-          text: TextSpan(
-            text: '?',
-            style: TextStyle(
-              color: const Color(0xFFE2E8F0),
-              fontSize: s * 0.12,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        q.paint(canvas, Offset(head.dx + s * 0.14, head.dy - s * 0.28));
-      case AvatarTier.broIsTrying:
+      case AvatarTier.skinny:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(
@@ -428,99 +415,19 @@ class _AvatarCharacterPainter extends CustomPainter {
           ),
           Paint()..color = const Color(0xFF63B3ED),
         );
-      case AvatarTier.lockIn:
-        final hp = Paint()
-          ..color = const Color(0xFF2B6CB0)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = s * 0.03;
-        canvas.drawArc(
-          Rect.fromCenter(center: head, width: s * 0.38, height: s * 0.34),
-          math.pi * 1.15,
-          math.pi * 0.7,
-          false,
-          hp,
-        );
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: Offset(head.dx - s * 0.17, head.dy),
-              width: s * 0.05,
-              height: s * 0.1,
+      case AvatarTier.npc:
+        final q = TextPainter(
+          text: TextSpan(
+            text: '?',
+            style: TextStyle(
+              color: const Color(0xFFE2E8F0),
+              fontSize: s * 0.12,
+              fontWeight: FontWeight.w800,
             ),
-            Radius.circular(s * 0.015),
           ),
-          Paint()..color = const Color(0xFF2B6CB0),
-        );
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: Offset(head.dx + s * 0.17, head.dy),
-              width: s * 0.05,
-              height: s * 0.1,
-            ),
-            Radius.circular(s * 0.015),
-          ),
-          Paint()..color = const Color(0xFF2B6CB0),
-        );
-      case AvatarTier.grinder:
-        _drawGear(canvas, Offset(c.dx, c.dy + s * 0.12), s * 0.07, const Color(0xFFECC94B));
-      case AvatarTier.based:
-        canvas.drawCircle(
-          Offset(c.dx + s * 0.12, c.dy + s * 0.08),
-          s * 0.04,
-          Paint()..color = const Color(0xFF38A169),
-        );
-        final check = Paint()
-          ..color = Colors.white
-          ..strokeWidth = s * 0.012
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round;
-        canvas.drawPath(
-          Path()
-            ..moveTo(c.dx + s * 0.1, c.dy + s * 0.08)
-            ..lineTo(c.dx + s * 0.115, c.dy + s * 0.095)
-            ..lineTo(c.dx + s * 0.14, c.dy + s * 0.065),
-          check,
-        );
-      case AvatarTier.chadApprentice:
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: Offset(c.dx, c.dy + s * 0.02),
-              width: s * 0.22,
-              height: s * 0.05,
-            ),
-            Radius.circular(s * 0.02),
-          ),
-          Paint()..color = const Color(0xFF00B4D8),
-        );
-      case AvatarTier.chad:
-        final shield = Path()
-          ..moveTo(c.dx + s * 0.18, c.dy + s * 0.05)
-          ..lineTo(c.dx + s * 0.26, c.dy + s * 0.08)
-          ..lineTo(c.dx + s * 0.26, c.dy + s * 0.18)
-          ..quadraticBezierTo(
-            c.dx + s * 0.22,
-            c.dy + s * 0.24,
-            c.dx + s * 0.18,
-            c.dy + s * 0.26,
-          )
-          ..quadraticBezierTo(
-            c.dx + s * 0.14,
-            c.dy + s * 0.24,
-            c.dx + s * 0.1,
-            c.dy + s * 0.18,
-          )
-          ..lineTo(c.dx + s * 0.1, c.dy + s * 0.08)
-          ..close();
-        canvas.drawPath(shield, Paint()..color = const Color(0xFFD69E2E));
-        canvas.drawPath(
-          shield,
-          Paint()
-            ..color = const Color(0xFF744210)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = s * 0.01,
-        );
+          textDirection: TextDirection.ltr,
+        )..layout();
+        q.paint(canvas, Offset(head.dx + s * 0.14, head.dy - s * 0.28));
       case AvatarTier.sigma:
         canvas.drawPath(
           Path()
@@ -529,26 +436,16 @@ class _AvatarCharacterPainter extends CustomPainter {
             ..quadraticBezierTo(head.dx, head.dy - s * 0.05, head.dx - s * 0.2, head.dy + s * 0.05),
           Paint()..color = const Color(0xFF1A365D).withValues(alpha: 0.55),
         );
-      case AvatarTier.sigmaGrindset:
-        final bolt = Path()
-          ..moveTo(c.dx + s * 0.2, c.dy - s * 0.05)
-          ..lineTo(c.dx + s * 0.14, c.dy + s * 0.05)
-          ..lineTo(c.dx + s * 0.18, c.dy + s * 0.05)
-          ..lineTo(c.dx + s * 0.12, c.dy + s * 0.18)
-          ..lineTo(c.dx + s * 0.22, c.dy + s * 0.04)
-          ..lineTo(c.dx + s * 0.17, c.dy + s * 0.04)
-          ..close();
-        canvas.drawPath(bolt, Paint()..color = const Color(0xFFF6E05E));
       case AvatarTier.alpha:
         _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.2), s * 0.14, const Color(0xFFFFD700));
-      case AvatarTier.gigaChad:
+      case AvatarTier.gigachad:
         _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.2), s * 0.14, const Color(0xFF63B3ED));
         canvas.drawCircle(
           Offset(c.dx - s * 0.16, c.dy + s * 0.1),
           s * 0.035,
           Paint()..color = const Color(0xFF90CDF4),
         );
-      case AvatarTier.ultraChad:
+      case AvatarTier.superSaiyan:
         _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.22), s * 0.15, const Color(0xFFFFD700));
         for (var i = 0; i < 3; i++) {
           canvas.drawCircle(
@@ -557,8 +454,8 @@ class _AvatarCharacterPainter extends CustomPainter {
             Paint()..color = const Color(0xFFFFF59D).withValues(alpha: 0.9),
           );
         }
-      case AvatarTier.him:
-        final flame = Paint()..color = const Color(0xFFFF5722).withValues(alpha: 0.85);
+      case AvatarTier.superSaiyanGod:
+        final flame = Paint()..color = const Color(0xFFFF0055).withValues(alpha: 0.85);
         canvas.drawOval(
           Rect.fromCenter(
             center: Offset(head.dx - s * 0.16, head.dy - s * 0.08),
@@ -575,54 +472,7 @@ class _AvatarCharacterPainter extends CustomPainter {
           ),
           flame,
         );
-        _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.22), s * 0.15, const Color(0xFFFF8A65));
-      case AvatarTier.builtDifferent:
-        canvas.drawOval(
-          Rect.fromCenter(center: c, width: s * 0.72, height: s * 0.28),
-          Paint()
-            ..color = const Color(0xFF9F7AEA).withValues(alpha: 0.55)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = s * 0.02,
-        );
-        _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.22), s * 0.15, const Color(0xFFB794F4));
-      case AvatarTier.finalBoss:
-        final horn = Paint()..color = const Color(0xFF553C9A);
-        canvas.drawPath(
-          Path()
-            ..moveTo(head.dx - s * 0.12, head.dy - s * 0.14)
-            ..lineTo(head.dx - s * 0.22, head.dy - s * 0.3)
-            ..lineTo(head.dx - s * 0.05, head.dy - s * 0.18)
-            ..close(),
-          horn,
-        );
-        canvas.drawPath(
-          Path()
-            ..moveTo(head.dx + s * 0.12, head.dy - s * 0.14)
-            ..lineTo(head.dx + s * 0.22, head.dy - s * 0.3)
-            ..lineTo(head.dx + s * 0.05, head.dy - s * 0.18)
-            ..close(),
-          horn,
-        );
-        _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.2), s * 0.12, const Color(0xFFE9D8FD));
-      case AvatarTier.productivityDemon:
-        final horn = Paint()..color = const Color(0xFFFF0055);
-        canvas.drawPath(
-          Path()
-            ..moveTo(head.dx - s * 0.1, head.dy - s * 0.12)
-            ..lineTo(head.dx - s * 0.26, head.dy - s * 0.34)
-            ..lineTo(head.dx - s * 0.02, head.dy - s * 0.16)
-            ..close(),
-          horn,
-        );
-        canvas.drawPath(
-          Path()
-            ..moveTo(head.dx + s * 0.1, head.dy - s * 0.12)
-            ..lineTo(head.dx + s * 0.26, head.dy - s * 0.34)
-            ..lineTo(head.dx + s * 0.02, head.dy - s * 0.16)
-            ..close(),
-          horn,
-        );
-        _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.2), s * 0.16, const Color(0xFFFFD700));
+        _drawCrown(canvas, Offset(head.dx, head.dy - s * 0.22), s * 0.16, const Color(0xFFFF0055));
         canvas.drawCircle(
           Offset(head.dx - s * 0.055, head.dy - s * 0.01),
           s * 0.03,
@@ -649,43 +499,23 @@ class _AvatarCharacterPainter extends CustomPainter {
     canvas.drawPath(path, Paint()..color = color);
   }
 
-  void _drawGear(Canvas canvas, Offset center, double r, Color color) {
-    final paint = Paint()..color = color;
-    canvas.drawCircle(center, r * 0.55, paint);
-    for (var i = 0; i < 6; i++) {
-      final a = i * math.pi / 3;
-      canvas.drawRect(
-        Rect.fromCenter(
-          center: Offset(
-            center.dx + math.cos(a) * r * 0.75,
-            center.dy + math.sin(a) * r * 0.75,
-          ),
-          width: r * 0.35,
-          height: r * 0.35,
-        ),
-        paint,
-      );
-    }
-    canvas.drawCircle(center, r * 0.22, Paint()..color = const Color(0xFF2D3748));
-  }
-
   Color _shirtColor() {
-    if (_stage >= 17) return const Color(0xFF2D0A1F);
-    if (_stage >= 15) return const Color(0xFF2A1A4A);
-    if (_stage >= 12) return const Color(0xFF4A1520);
-    if (_stage >= 9) return const Color(0xFF1A365D);
-    if (_stage >= 8) return const Color(0xFF744210);
-    if (_stage >= 5) return const Color(0xFF4A5568);
-    if (_stage >= 3) return const Color(0xFFC05621);
-    if (_stage == 2) return const Color(0xFF718096);
-    if (_stage == 1) return const Color(0xFFE53E3E);
+    if (_stage >= 8) return const Color(0xFFFF0055);
+    if (_stage >= 7) return const Color(0xFFD69E2E);
+    if (_stage >= 6) return const Color(0xFF744210);
+    if (_stage >= 5) return const Color(0xFFC53030);
+    if (_stage >= 4) return const Color(0xFF1A365D);
+    if (_stage >= 3) return const Color(0xFF718096);
+    if (_stage >= 2) return const Color(0xFFC05621);
+    if (_stage >= 1) return const Color(0xFFE53E3E);
     return const Color(0xFF68D391);
   }
 
   Color _hairColor() {
-    if (_stage >= 16) return const Color(0xFFE9D8FD);
-    if (_stage >= 12) return const Color(0xFF1A202C);
-    if (_stage >= 9) return const Color(0xFF2D3748);
+    if (_stage >= 8) return const Color(0xFFFF0055);
+    if (_stage >= 7) return const Color(0xFFFFD700);
+    if (_stage >= 6) return const Color(0xFF1A202C);
+    if (_stage >= 4) return const Color(0xFF2D3748);
     if (_stage == 1) return const Color(0xFFD69E2E);
     return const Color(0xFF4A3728);
   }

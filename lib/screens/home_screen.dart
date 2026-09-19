@@ -100,7 +100,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Track real-life quests. Habits return when they are due; side quests stay done.',
+                    'Track real-life quests. Character Arcs return when they are due; Side Hustles stay done.',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
