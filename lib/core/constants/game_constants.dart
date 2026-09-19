@@ -4,30 +4,32 @@
 /// are defined in a single location rather than scattered as magic numbers.
 abstract final class GameConstants {
   // ── Quest XP Difficulties ───────────────────────────────────────────────────
-  /// XP awarded for a Small quest (e.g. quick chore, drinking water).
-  static const int xpSmall = 25;
+  /// XP awarded for a Light quest.
+  static const int xpLight = 5;
 
-  /// XP awarded for a Normal quest (e.g. 30min walk, normal workout).
-  static const int xpNormal = 50;
+  /// XP awarded for a Standard quest.
+  static const int xpStandard = 10;
 
-  /// XP awarded for a Large quest (e.g. focused study session, large task).
-  static const int xpLarge = 100;
+  /// XP awarded for a Challenging quest.
+  static const int xpChallenging = 20;
 
-  /// XP awarded for a Major quest (e.g. exam, project milestone).
-  static const int xpMajor = 150;
+  /// Minimum custom XP allowed for tasks (Section 11).
+  static const int minCustomXp = 5;
 
-  /// Minimum custom XP allowed for tasks.
-  static const int minCustomXp = 25;
+  /// Maximum custom XP allowed for tasks (Section 11).
+  static const int maxCustomXp = 50;
 
-  /// Maximum custom XP allowed for tasks.
-  static const int maxCustomXp = 500;
+  /// Retained aliases for backward compatibility.
+  static const int xpSmall = xpLight;
+  static const int xpNormal = xpStandard;
+  static const int xpLarge = xpChallenging;
+  static const int xpMajor = 50;
 
   /// Map of difficulty labels to their respective base XP values.
   static const Map<String, int> difficultyXpMap = {
-    'Small': xpSmall,
-    'Normal': xpNormal,
-    'Large': xpLarge,
-    'Major': xpMajor,
+    'Light': xpLight,
+    'Standard': xpStandard,
+    'Challenging': xpChallenging,
   };
 
   // ── Streak Multipliers ─────────────────────────────────────────────────────

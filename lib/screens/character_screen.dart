@@ -369,7 +369,7 @@ class _XpProgressBar extends StatelessWidget {
     final isMaxLevel = progress.level >= LevelEngine.maxLevel;
     final clampedProgress = progress.progressToNextLevel.clamp(0.0, 1.0);
     final percentText =
-        isMaxLevel ? '100%' : '${(clampedProgress * 100).toStringAsFixed(1)}%';
+        isMaxLevel ? '100%' : '${(clampedProgress * 100).round()}%';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

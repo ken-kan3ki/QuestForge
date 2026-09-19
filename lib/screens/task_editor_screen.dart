@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../core/constants/game_constants.dart';
+import '../models/quest_difficulty.dart';
 import '../models/quest_type.dart';
 import '../models/recurrence_rule.dart';
 import '../models/task.dart';
@@ -25,6 +27,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
   DateTime? _dueDate;
   var _submitted = false;
   late QuestType _questType;
+  late QuestDifficulty _difficulty;
   late RecurrenceKind _recurrenceKind;
   late List<int> _weekdays;
   late int _dayOfMonth;
@@ -41,9 +44,13 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
     _descriptionController = TextEditingController(
       text: task?.description ?? '',
     );
-    _xpController = TextEditingController(
-      text: task == null ? '' : '${task.xpReward}',
-    );
+    if (task == null) {
+      _difficulty = QuestDifficulty.standard;
+      _xpController = TextEditingController(text: '${GameConstants.xpStandard}');
+    } else {
+      _difficulty = QuestDifficulty.fromXp(task.xpReward);
+      _xpController = TextEditingController(text: '${task.xpReward}');
+    }
     _dueDate = task?.dueDate;
     _questType = task?.questType ?? QuestType.sideQuest;
     final recurrence = task?.recurrence;
@@ -110,7 +117,10 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
       id: widget.task?.id ?? '',
       title: _titleController.text.trim(),
       description: _validator.normalizeDescription(_descriptionController.text),
-      xpReward: _validator.parseXp(_xpController.text),
+      xpReward: _validator.parseXp(
+        _xpController.text,
+        originalXp: widget.task?.xpReward,
+      ),
       dueDate: _dueDate,
       isCompleted: widget.task?.isCompleted ?? false,
       createdAt: widget.task?.createdAt ?? DateTime.now(),
@@ -293,16 +303,72 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              Text(
+                'Difficulty',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<QuestDifficulty>(
+                key: const Key('difficulty-selector'),
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                ),
+                segments: const [
+                  ButtonSegment(
+                    value: QuestDifficulty.light,
+                    label: Text('Light'),
+                  ),
+                  ButtonSegment(
+                    value: QuestDifficulty.standard,
+                    label: Text('Standard'),
+                  ),
+                  ButtonSegment(
+                    value: QuestDifficulty.challenging,
+                    label: Text('Challenging'),
+                  ),
+                  ButtonSegment(
+                    value: QuestDifficulty.custom,
+                    label: Text('Custom'),
+                  ),
+                ],
+                selected: {_difficulty},
+                onSelectionChanged: (selected) {
+                  final newDiff = selected.first;
+                  setState(() {
+                    _difficulty = newDiff;
+                    if (newDiff != QuestDifficulty.custom) {
+                      _xpController.text = '${newDiff.defaultXp}';
+                    } else {
+                      final currentVal = int.tryParse(_xpController.text);
+                      if (currentVal == null ||
+                          currentVal < GameConstants.minCustomXp ||
+                          currentVal > GameConstants.maxCustomXp) {
+                        _xpController.text = '25';
+                      }
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 key: const Key('task-xp-field'),
                 controller: _xpController,
+                enabled: _difficulty == QuestDifficulty.custom,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'XP reward',
-                  helperText: 'Stored with the quest. XP is not awarded yet.',
+                  helperText: _difficulty == QuestDifficulty.custom
+                      ? 'Custom reward between 5 and 50 XP.'
+                      : '${_difficulty.label} difficulty awards ${_difficulty.defaultXp} base XP.',
                 ),
-                validator: (value) => _validator.xpError(value ?? ''),
+                validator: (value) => _validator.xpError(
+                  value ?? '',
+                  originalXp: widget.task?.xpReward,
+                ),
               ),
               const SizedBox(height: 16),
               ListTile(
