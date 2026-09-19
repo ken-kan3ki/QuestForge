@@ -321,7 +321,9 @@ class _LevelProgressSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${progress.xpToNextLevel} XP needed to reach Level ${stats.currentLevel + 1}',
+          stats.currentLevel >= 100
+              ? 'MAX LEVEL'
+              : '${progress.xpToNextLevel} XP needed to reach Level ${stats.currentLevel + 1}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colors.onSurfaceVariant,
           ),

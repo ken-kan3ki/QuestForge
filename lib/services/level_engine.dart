@@ -103,19 +103,21 @@ class LevelEngine {
 
   /// XP required to advance *from* [level] to `level + 1`.
   ///
-  /// Formula: `round(20 + 3 * L + 0.20 * L^2)` where `L = 1..99`.
+  /// Formula: `round(40 + 2 * L + 0.05 * L^2)` where `L = 1..99`.
+  /// Level 1 -> 2 requires 42 XP (~2 productive days with 10 XP Standard quests).
+  /// Level 100 cumulative XP is 30,265 XP (~30k range).
   /// Returns 0 for level >= 100 (max level).
   int requiredXpForLevel(int level) {
     if (level < 1) return requiredXpForLevel(1);
     if (level >= maxLevel) return 0;
-    return (20 + 3 * level + 0.20 * level * level).round();
+    return (40 + 2 * level + 0.05 * level * level).round();
   }
 
   /// Total (cumulative) XP required to reach [level].
   ///
   /// `totalXpRequiredForLevel(1) = 0`.
   /// For level N: `sum(requiredXpForLevel(L), L = 1..N-1)`.
-  /// For level 100, this evaluates to exactly 82,500 XP.
+  /// For level 100, this evaluates to exactly 30,265 XP.
   int totalXpRequiredForLevel(int level) {
     if (level <= 1) return 0;
     final target = level > maxLevel ? maxLevel : level;
@@ -134,10 +136,24 @@ class LevelEngine {
     return xp - floor;
   }
 
-  /// XP required to reach the next level from [level].
+  /// XP required to advance to the next level for a player with [totalXp].
   /// Returns 0 if already at or beyond [maxLevel].
-  int xpRequiredForNextLevel(int level) {
-    return requiredXpForLevel(level);
+  int xpRequiredForNextLevel(int totalXp) {
+    if (totalXp < 0) return requiredXpForLevel(1);
+    final lvl = levelFromTotalXp(totalXp);
+    if (lvl >= maxLevel) return 0;
+    return requiredXpForLevel(lvl);
+  }
+
+  /// Remaining XP needed to reach the next level from [totalXp].
+  /// Returns 0 if already at or beyond [maxLevel].
+  int xpRemainingForNextLevel(int totalXp) {
+    if (totalXp < 0) return requiredXpForLevel(1);
+    final lvl = levelFromTotalXp(totalXp);
+    if (lvl >= maxLevel) return 0;
+    final span = requiredXpForLevel(lvl);
+    final into = xpIntoCurrentLevel(totalXp);
+    return math.max(0, span - into);
   }
 
   /// Calculates the player's level from [totalXp].

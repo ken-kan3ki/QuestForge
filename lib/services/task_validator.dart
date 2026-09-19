@@ -24,10 +24,11 @@ class TaskValidator {
   TaskValidationResult validate({
     required String title,
     required String xpText,
+    int? originalXp,
   }) {
     return TaskValidationResult(
       titleError: titleError(title),
-      xpError: xpError(xpText),
+      xpError: xpError(xpText, originalXp: originalXp),
     );
   }
 
@@ -38,10 +39,13 @@ class TaskValidator {
     return null;
   }
 
-  String? xpError(String xpText) {
+  String? xpError(String xpText, {int? originalXp}) {
     final parsed = int.tryParse(xpText.trim());
     if (parsed == null) {
       return 'Enter a whole number for the XP reward.';
+    }
+    if (originalXp != null && parsed == originalXp) {
+      return null;
     }
     if (parsed < minXp) {
       return 'XP reward must be at least $minXp.';
@@ -52,9 +56,15 @@ class TaskValidator {
     return null;
   }
 
-  int parseXp(String xpText) {
+  int parseXp(String xpText, {int? originalXp}) {
     final parsed = int.tryParse(xpText.trim());
-    if (parsed == null || parsed < minXp || parsed > maxXp) {
+    if (parsed == null) {
+      throw FormatException('Invalid XP reward: $xpText');
+    }
+    if (originalXp != null && parsed == originalXp) {
+      return parsed;
+    }
+    if (parsed < minXp || parsed > maxXp) {
       throw FormatException('Invalid XP reward: $xpText');
     }
     return parsed;
