@@ -4,11 +4,13 @@ import '../models/avatar_progression.dart';
 import '../models/player_stats.dart';
 import '../models/quest_type.dart';
 import '../models/recurrence_rule.dart';
+import '../models/reminder_config.dart';
 import '../models/task.dart';
 import '../models/xp_transaction.dart';
 import '../services/avatar_engine.dart';
 import '../services/level_engine.dart';
 import '../services/recurrence_engine.dart';
+import '../services/reminder_service.dart';
 import '../services/statistics_service.dart';
 import '../services/streak_engine.dart';
 import '../services/task_repository.dart';
@@ -24,6 +26,7 @@ class TaskController extends ChangeNotifier {
     AvatarEngine? avatarEngine,
     RecurrenceEngine? recurrenceEngine,
     StatisticsService? statisticsService,
+    ReminderService? reminderService,
     DateTime Function()? clock,
   }) : _xpLedger = xpLedger ?? InMemoryXpLedger(),
        _streakEngine = streakEngine ?? const StreakEngine(),
@@ -31,6 +34,7 @@ class TaskController extends ChangeNotifier {
        _avatarEngine = avatarEngine ?? const AvatarEngine(),
        _recurrenceEngine = recurrenceEngine ?? const RecurrenceEngine(),
        _statisticsService = statisticsService ?? const StatisticsService(),
+       _reminderService = reminderService ?? ReminderService(),
        _clock = clock ?? DateTime.now;
 
   final TaskRepository _repository;
@@ -40,7 +44,10 @@ class TaskController extends ChangeNotifier {
   final AvatarEngine _avatarEngine;
   final RecurrenceEngine _recurrenceEngine;
   final StatisticsService _statisticsService;
+  final ReminderService _reminderService;
   final DateTime Function() _clock;
+
+  ReminderService get reminderService => _reminderService;
 
   List<Task> get tasks => _repository.getAll();
 
@@ -112,6 +119,7 @@ class TaskController extends ChangeNotifier {
     DateTime? dueDate,
     QuestType questType = QuestType.sideQuest,
     RecurrenceRule? recurrence,
+    ReminderConfig? reminder,
   }) {
     final task = _repository.create(
       title: title.trim(),
@@ -120,13 +128,22 @@ class TaskController extends ChangeNotifier {
       dueDate: dueDate,
       questType: questType,
       recurrence: recurrence,
+      reminder: reminder,
     );
+    if (task.reminder != null && task.reminder!.enabled) {
+      _reminderService.scheduleTaskReminder(task);
+    }
     notifyListeners();
     return task;
   }
 
   Task updateTask(Task task) {
+    final oldTask = tasks.firstWhere(
+      (t) => t.id == task.id,
+      orElse: () => task,
+    );
     final updated = _repository.update(task);
+    _reminderService.rescheduleTaskReminder(oldTask, updated);
     notifyListeners();
     return updated;
   }
@@ -161,6 +178,7 @@ class TaskController extends ChangeNotifier {
   void refresh() => notifyListeners();
 
   void deleteTask(String id) {
+    _reminderService.cancelTaskReminders(id);
     _repository.delete(id);
     notifyListeners();
   }
@@ -179,6 +197,7 @@ class TaskController extends ChangeNotifier {
     if (ledgerResult is Future) {
       await ledgerResult;
     }
+    await _reminderService.syncAllTaskReminders(tasks);
     notifyListeners();
   }
 

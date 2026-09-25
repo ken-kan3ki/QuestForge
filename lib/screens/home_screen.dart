@@ -26,6 +26,7 @@ class HomeScreen extends StatelessWidget {
         dueDate: draft.dueDate,
         questType: draft.questType,
         recurrence: draft.recurrence,
+        reminder: draft.reminder,
       );
       return;
     }
@@ -41,6 +42,8 @@ class HomeScreen extends StatelessWidget {
         questType: draft.questType,
         recurrence: draft.recurrence,
         clearRecurrence: draft.recurrence == null,
+        reminder: draft.reminder,
+        clearReminder: draft.reminder == null,
       ),
     );
   }

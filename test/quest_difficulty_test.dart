@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prod/core/constants/game_constants.dart';
 import 'package:prod/models/quest_difficulty.dart';
 import 'package:prod/models/task.dart';
 import 'package:prod/screens/task_editor_screen.dart';

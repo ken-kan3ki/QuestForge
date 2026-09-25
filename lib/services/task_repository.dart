@@ -1,5 +1,6 @@
 import '../models/quest_type.dart';
 import '../models/recurrence_rule.dart';
+import '../models/reminder_config.dart';
 import '../models/task.dart';
 
 abstract class TaskRepository {
@@ -12,6 +13,7 @@ abstract class TaskRepository {
     DateTime? dueDate,
     QuestType questType = QuestType.sideQuest,
     RecurrenceRule? recurrence,
+    ReminderConfig? reminder,
   });
 
   Task update(Task task);
@@ -49,6 +51,7 @@ class InMemoryTaskRepository implements TaskRepository {
     DateTime? dueDate,
     QuestType questType = QuestType.sideQuest,
     RecurrenceRule? recurrence,
+    ReminderConfig? reminder,
   }) {
     final task = Task(
       id: 'task_${_nextId++}',
@@ -61,6 +64,7 @@ class InMemoryTaskRepository implements TaskRepository {
       recurrence: questType == QuestType.habit
           ? (recurrence ?? RecurrenceRule.daily)
           : null,
+      reminder: reminder,
     );
     _tasks.add(task);
     return task;

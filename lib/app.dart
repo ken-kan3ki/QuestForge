@@ -4,6 +4,7 @@ import 'navigation/app_shell.dart';
 import 'services/persistence_service.dart';
 import 'services/persistent_task_repository.dart';
 import 'services/persistent_xp_ledger.dart';
+import 'services/reminder_service.dart';
 import 'services/shared_preferences_persistence_service.dart';
 import 'services/task_repository.dart';
 import 'services/xp_ledger.dart';
@@ -17,11 +18,13 @@ class ProRpgApp extends StatefulWidget {
     this.taskRepository,
     this.xpLedger,
     this.persistenceService,
+    this.reminderService,
   });
 
   final TaskRepository? taskRepository;
   final XpLedger? xpLedger;
   final PersistenceService? persistenceService;
+  final ReminderService? reminderService;
 
   @override
   State<ProRpgApp> createState() => _ProRpgAppState();
@@ -42,9 +45,13 @@ class _ProRpgAppState extends State<ProRpgApp> {
     final xpLedger = widget.xpLedger ??
         PersistentXpLedger(persistenceService: persistence);
 
+    final reminderService = widget.reminderService ??
+        ReminderService(persistenceService: persistence);
+
     _taskController = TaskController(
       taskRepo,
       xpLedger: xpLedger,
+      reminderService: reminderService,
     );
 
     if (taskRepo is PersistentTaskRepository) {
@@ -62,6 +69,12 @@ class _ProRpgAppState extends State<ProRpgApp> {
         }
       });
     }
+
+    reminderService.loadFromPersistence().then((_) {
+      if (mounted) {
+        _taskController.refresh();
+      }
+    });
   }
 
   @override

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../models/reminder_config.dart';
 import '../services/backup_service.dart';
 import '../state/task_scope.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     this.backupService = const BackupService(),
@@ -11,11 +12,18 @@ class SettingsScreen extends StatelessWidget {
 
   final BackupService backupService;
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  var _dailyReminderTime = const TimeOfDay(hour: 20, minute: 0);
+
   Future<void> _exportBackup(BuildContext context) async {
     final controller = TaskScope.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
-    final result = await backupService.exportToFile(
+    final result = await widget.backupService.exportToFile(
       tasks: controller.tasks,
       xpTransactions: controller.xpTransactions,
     );
@@ -77,7 +85,7 @@ class SettingsScreen extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     final controller = TaskScope.of(context);
 
-    final result = await backupService.importFromFile();
+    final result = await widget.backupService.importFromFile();
 
     if (!context.mounted) return;
 
@@ -100,7 +108,8 @@ class SettingsScreen extends StatelessWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            result.errorMessage ?? 'Failed to restore backup. Your existing data was preserved.',
+            result.errorMessage ??
+                'Failed to restore backup. Your existing data was preserved.',
           ),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
@@ -109,10 +118,33 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _pickReminderTime(BuildContext context) async {
+    final controller = TaskScope.of(context);
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _dailyReminderTime,
+    );
+    if (selected != null) {
+      setState(() => _dailyReminderTime = selected);
+      final remTime = ReminderTime(hour: selected.hour, minute: selected.minute);
+      await controller.reminderService.scheduleSettingsReminder(remTime);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final controller = TaskScope.of(context);
+    final settingsReminder = controller.reminderService.getSettingsReminder();
+    final remindersEnabled = settingsReminder != null;
+
+    if (settingsReminder != null) {
+      _dailyReminderTime = TimeOfDay(
+        hour: settingsReminder.scheduledAt.hour,
+        minute: settingsReminder.scheduledAt.minute,
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -120,6 +152,85 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.alarm_outlined, color: colors.primary, size: 24),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Daily Reminder',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Receive a recurring daily reminder to complete your quests and forge your streak.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      key: const Key('settings-daily-reminder-switch'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Daily Check-In Reminder'),
+                      subtitle: Text(
+                        remindersEnabled
+                            ? 'Recurring · Daily at ${_dailyReminderTime.format(context)}'
+                            : 'Disabled',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      value: remindersEnabled,
+                      onChanged: (enabled) async {
+                        if (enabled) {
+                          final remTime = ReminderTime(
+                            hour: _dailyReminderTime.hour,
+                            minute: _dailyReminderTime.minute,
+                          );
+                          await controller.reminderService
+                              .scheduleSettingsReminder(remTime);
+                        } else {
+                          await controller.reminderService
+                              .cancelSettingsReminder();
+                        }
+                        setState(() {});
+                      },
+                    ),
+                    if (remindersEnabled) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Reminder Time',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            key: const Key('settings-daily-reminder-time-button'),
+                            onPressed: () => _pickReminderTime(context),
+                            icon: const Icon(Icons.access_time, size: 18),
+                            label: Text(_dailyReminderTime.format(context)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),

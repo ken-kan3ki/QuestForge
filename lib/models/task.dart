@@ -1,5 +1,6 @@
 import 'quest_type.dart';
 import 'recurrence_rule.dart';
+import 'reminder_config.dart';
 
 class Task {
   const Task({
@@ -14,6 +15,7 @@ class Task {
     this.questType = QuestType.sideQuest,
     this.recurrence,
     this.completedDates = const [],
+    this.reminder,
   });
 
   final String id;
@@ -27,6 +29,7 @@ class Task {
   final QuestType questType;
   final RecurrenceRule? recurrence;
   final List<DateTime> completedDates;
+  final ReminderConfig? reminder;
 
   bool get isHabit => questType == QuestType.habit;
 
@@ -56,6 +59,8 @@ class Task {
     RecurrenceRule? recurrence,
     bool clearRecurrence = false,
     List<DateTime>? completedDates,
+    ReminderConfig? reminder,
+    bool clearReminder = false,
   }) {
     return Task(
       id: id,
@@ -71,6 +76,7 @@ class Task {
       questType: questType ?? this.questType,
       recurrence: clearRecurrence ? null : (recurrence ?? this.recurrence),
       completedDates: completedDates ?? this.completedDates,
+      reminder: clearReminder ? null : (reminder ?? this.reminder),
     );
   }
 
@@ -87,6 +93,7 @@ class Task {
         'recurrence': recurrence?.toJson(),
         'completedDates':
             completedDates.map((date) => date.toIso8601String()).toList(),
+        'reminder': reminder?.toJson(),
       };
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -106,6 +113,7 @@ class Task {
       questType: _parseQuestType(json['questType']),
       recurrence: _parseRecurrence(json['recurrence']),
       completedDates: _parseDates(json['completedDates']),
+      reminder: _parseReminder(json['reminder']),
     );
   }
 
@@ -123,6 +131,7 @@ class Task {
           completedAt == other.completedAt &&
           questType == other.questType &&
           recurrence == other.recurrence &&
+          reminder == other.reminder &&
           _datesEqual(completedDates, other.completedDates);
 
   @override
@@ -137,6 +146,7 @@ class Task {
         completedAt,
         questType,
         recurrence,
+        reminder,
         Object.hashAll(completedDates),
       );
 }
@@ -158,6 +168,16 @@ RecurrenceRule? _parseRecurrence(Object? raw) {
   }
   if (raw is Map) {
     return RecurrenceRule.fromJson(Map<String, dynamic>.from(raw));
+  }
+  return null;
+}
+
+ReminderConfig? _parseReminder(Object? raw) {
+  if (raw is Map<String, dynamic>) {
+    return ReminderConfig.fromJson(raw);
+  }
+  if (raw is Map) {
+    return ReminderConfig.fromJson(Map<String, dynamic>.from(raw));
   }
   return null;
 }

@@ -5,6 +5,7 @@ import '../core/constants/game_constants.dart';
 import '../models/quest_difficulty.dart';
 import '../models/quest_type.dart';
 import '../models/recurrence_rule.dart';
+import '../models/reminder_config.dart';
 import '../models/task.dart';
 import '../services/date_display.dart';
 import '../services/task_validator.dart';
@@ -32,6 +33,17 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
   late List<int> _weekdays;
   late int _dayOfMonth;
   var _customUsesMonthDay = true;
+
+  // ── Reminder State ──────────────────────────────────────────────────────────
+  var _reminderEnabled = false;
+  var _reminderType = ReminderType.custom;
+  DateTime? _reminderCustomDate;
+  TimeOfDay? _reminderCustomTime;
+  var _reminderFrequency = ReminderFrequency.daily;
+  late List<int> _reminderWeekdays;
+  late int _reminderDayOfMonth;
+  var _reminderRecurringTime = const TimeOfDay(hour: 20, minute: 0);
+  String? _reminderValidationError;
 
   bool get _isEditing => widget.task != null;
 
@@ -61,6 +73,48 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
     _dayOfMonth = recurrence?.dayOfMonth ?? now.day;
     _customUsesMonthDay =
         recurrence == null || recurrence.dayOfMonth != null;
+
+    // Initialize reminder state
+    final reminder = task?.reminder;
+    if (reminder != null && reminder.enabled) {
+      _reminderEnabled = true;
+      _reminderType = reminder.type;
+      if (reminder.customDateTime != null) {
+        _reminderCustomDate = DateTime(
+          reminder.customDateTime!.year,
+          reminder.customDateTime!.month,
+          reminder.customDateTime!.day,
+        );
+        _reminderCustomTime = TimeOfDay(
+          hour: reminder.customDateTime!.hour,
+          minute: reminder.customDateTime!.minute,
+        );
+      } else {
+        final tomorrow = now.add(const Duration(days: 1));
+        _reminderCustomDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
+        _reminderCustomTime = const TimeOfDay(hour: 20, minute: 0);
+      }
+      _reminderFrequency = reminder.frequency ?? ReminderFrequency.daily;
+      _reminderWeekdays = List<int>.from(
+        reminder.selectedWeekdays.isNotEmpty
+            ? reminder.selectedWeekdays
+            : [now.weekday],
+      );
+      _reminderDayOfMonth = reminder.dayOfMonth ?? now.day;
+      if (reminder.time != null) {
+        _reminderRecurringTime = reminder.time!.toTimeOfDay();
+      }
+    } else {
+      _reminderEnabled = false;
+      _reminderType = ReminderType.custom;
+      final tomorrow = now.add(const Duration(days: 1));
+      _reminderCustomDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
+      _reminderCustomTime = const TimeOfDay(hour: 20, minute: 0);
+      _reminderFrequency = ReminderFrequency.daily;
+      _reminderWeekdays = [now.weekday];
+      _reminderDayOfMonth = now.day;
+      _reminderRecurringTime = const TimeOfDay(hour: 20, minute: 0);
+    }
   }
 
   @override
@@ -94,6 +148,82 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
     }
   }
 
+  ReminderConfig? _buildReminder() {
+    if (!_reminderEnabled) {
+      return null;
+    }
+    if (_reminderType == ReminderType.custom) {
+      if (_reminderCustomDate == null || _reminderCustomTime == null) {
+        return null;
+      }
+      final dt = DateTime(
+        _reminderCustomDate!.year,
+        _reminderCustomDate!.month,
+        _reminderCustomDate!.day,
+        _reminderCustomTime!.hour,
+        _reminderCustomTime!.minute,
+      );
+      return ReminderConfig.custom(
+        dateTime: dt,
+        enabled: true,
+      );
+    }
+
+    final remTime = ReminderTime.fromTimeOfDay(_reminderRecurringTime);
+    switch (_reminderFrequency) {
+      case ReminderFrequency.daily:
+        return ReminderConfig.daily(
+          time: remTime,
+          enabled: true,
+        );
+      case ReminderFrequency.weekly:
+        return ReminderConfig.weekly(
+          weekdays: _reminderWeekdays,
+          time: remTime,
+          enabled: true,
+        );
+      case ReminderFrequency.monthly:
+        return ReminderConfig.monthly(
+          dayOfMonth: _reminderDayOfMonth,
+          time: remTime,
+          enabled: true,
+        );
+    }
+  }
+
+  String? _validateReminder() {
+    if (!_reminderEnabled) {
+      return null;
+    }
+    final now = DateTime.now();
+    if (_reminderType == ReminderType.custom) {
+      if (_reminderCustomDate == null || _reminderCustomTime == null) {
+        return 'Please select a date and time for the reminder.';
+      }
+      final dt = DateTime(
+        _reminderCustomDate!.year,
+        _reminderCustomDate!.month,
+        _reminderCustomDate!.day,
+        _reminderCustomTime!.hour,
+        _reminderCustomTime!.minute,
+      );
+      if (!dt.isAfter(now)) {
+        return 'Reminder date and time must be in the future.';
+      }
+    } else if (_reminderType == ReminderType.recurring) {
+      if (_reminderFrequency == ReminderFrequency.weekly) {
+        if (_reminderWeekdays.isEmpty) {
+          return 'Select at least one day for weekly reminder.';
+        }
+      } else if (_reminderFrequency == ReminderFrequency.monthly) {
+        if (_reminderDayOfMonth < 1 || _reminderDayOfMonth > 31) {
+          return 'Day of the month must be between 1 and 31.';
+        }
+      }
+    }
+    return null;
+  }
+
   Future<void> _pickDueDate() async {
     final now = DateTime.now();
     final selected = await showDatePicker(
@@ -107,9 +237,57 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
     }
   }
 
+  Future<void> _pickCustomDate() async {
+    final now = DateTime.now();
+    final initial = _reminderCustomDate ?? now;
+    final first = DateTime(now.year, now.month, now.day);
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(first) ? first : initial,
+      firstDate: first,
+      lastDate: DateTime(now.year + 10),
+    );
+    if (selected != null) {
+      setState(() {
+        _reminderCustomDate = selected;
+        _reminderValidationError = _validateReminder();
+      });
+    }
+  }
+
+  Future<void> _pickCustomTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _reminderCustomTime ?? TimeOfDay.now(),
+    );
+    if (selected != null) {
+      setState(() {
+        _reminderCustomTime = selected;
+        _reminderValidationError = _validateReminder();
+      });
+    }
+  }
+
+  Future<void> _pickRecurringTime() async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: _reminderRecurringTime,
+    );
+    if (selected != null) {
+      setState(() {
+        _reminderRecurringTime = selected;
+        _reminderValidationError = null;
+      });
+    }
+  }
+
   void _save() {
     setState(() => _submitted = true);
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    final formValid = _formKey.currentState?.validate() ?? false;
+    final reminderError = _validateReminder();
+    setState(() => _reminderValidationError = reminderError);
+
+    if (!formValid || reminderError != null) {
       return;
     }
 
@@ -128,6 +306,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
       questType: _questType,
       recurrence: _buildRecurrence(),
       completedDates: widget.task?.completedDates ?? const [],
+      reminder: _buildReminder(),
     );
     Navigator.of(context).pop(draft);
   }
@@ -390,6 +569,207 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                       ),
                 onTap: _pickDueDate,
               ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                key: const Key('reminder-switch'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Reminder',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  _reminderEnabled
+                      ? 'Notification reminder enabled'
+                      : 'Notify when this quest is due',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: _reminderEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    _reminderEnabled = value;
+                    _reminderValidationError = null;
+                  });
+                },
+              ),
+              if (_reminderEnabled) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Reminder Type',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<ReminderType>(
+                  key: const Key('reminder-type-selector'),
+                  showSelectedIcon: false,
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  segments: const [
+                    ButtonSegment(
+                      value: ReminderType.custom,
+                      label: Text('Custom'),
+                      icon: Icon(Icons.alarm_outlined, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: ReminderType.recurring,
+                      label: Text('Recurring'),
+                      icon: Icon(Icons.repeat, size: 18),
+                    ),
+                  ],
+                  selected: {_reminderType},
+                  onSelectionChanged: (selected) {
+                    setState(() {
+                      _reminderType = selected.first;
+                      _reminderValidationError = null;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (_reminderType == ReminderType.custom) ...[
+                  Text(
+                    'Date',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('reminder-custom-date-button'),
+                    onPressed: _pickCustomDate,
+                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                    label: Text(
+                      _reminderCustomDate != null
+                          ? formatReminderDate(_reminderCustomDate!)
+                          : 'Select Date',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Time',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('reminder-custom-time-button'),
+                    onPressed: _pickCustomTime,
+                    icon: const Icon(Icons.access_time_outlined, size: 18),
+                    label: Text(
+                      _reminderCustomTime != null
+                          ? _reminderCustomTime!.format(context)
+                          : 'Select Time',
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    'Frequency',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SegmentedButton<ReminderFrequency>(
+                    key: const Key('reminder-frequency-selector'),
+                    showSelectedIcon: false,
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    segments: const [
+                      ButtonSegment(
+                        value: ReminderFrequency.daily,
+                        label: Text('Daily'),
+                      ),
+                      ButtonSegment(
+                        value: ReminderFrequency.weekly,
+                        label: Text('Weekly'),
+                      ),
+                      ButtonSegment(
+                        value: ReminderFrequency.monthly,
+                        label: Text('Monthly'),
+                      ),
+                    ],
+                    selected: {_reminderFrequency},
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _reminderFrequency = selected.first;
+                        _reminderValidationError = null;
+                      });
+                    },
+                  ),
+                  if (_reminderFrequency == ReminderFrequency.weekly) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Days',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _WeekdayPicker(
+                      selected: _reminderWeekdays,
+                      onChanged: (days) {
+                        setState(() {
+                          _reminderWeekdays = days;
+                          _reminderValidationError = null;
+                        });
+                      },
+                    ),
+                  ],
+                  if (_reminderFrequency == ReminderFrequency.monthly) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Day',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _DayOfMonthPicker(
+                      day: _reminderDayOfMonth,
+                      onChanged: (day) {
+                        setState(() {
+                          _reminderDayOfMonth = day;
+                          _reminderValidationError = null;
+                        });
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    'Time',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('reminder-recurring-time-button'),
+                    onPressed: _pickRecurringTime,
+                    icon: const Icon(Icons.access_time_outlined, size: 18),
+                    label: Text(_reminderRecurringTime.format(context)),
+                  ),
+                ],
+                if (_reminderValidationError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _reminderValidationError!,
+                    key: const Key('reminder-validation-error'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ],
           ),
         ),

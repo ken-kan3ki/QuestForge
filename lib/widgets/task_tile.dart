@@ -97,6 +97,11 @@ class TaskTile extends StatelessWidget {
                           icon: Icons.schedule,
                           label: task.recurrence!.displayLabel,
                         ),
+                      if (task.reminder != null && task.reminder!.enabled)
+                        _MetaChip(
+                          icon: Icons.alarm_outlined,
+                          label: task.reminder!.displayLabel,
+                        ),
                       if (task.dueDate != null)
                         _MetaChip(
                           icon: Icons.event,

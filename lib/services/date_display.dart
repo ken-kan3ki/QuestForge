@@ -9,3 +9,11 @@ bool isDueDateOverdue(DateTime dueDate, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   return due.isBefore(today);
 }
+
+String formatReminderDate(DateTime date) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
+}

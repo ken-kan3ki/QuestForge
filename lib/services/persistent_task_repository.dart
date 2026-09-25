@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../models/quest_type.dart';
 import '../models/recurrence_rule.dart';
+import '../models/reminder_config.dart';
 import '../models/task.dart';
 import 'persistence_service.dart';
 import 'task_repository.dart';
@@ -79,6 +80,7 @@ class PersistentTaskRepository implements TaskRepository {
     DateTime? dueDate,
     QuestType questType = QuestType.sideQuest,
     RecurrenceRule? recurrence,
+    ReminderConfig? reminder,
   }) {
     final task = Task(
       id: 'task_${_nextId++}',
@@ -91,6 +93,7 @@ class PersistentTaskRepository implements TaskRepository {
       recurrence: questType == QuestType.habit
           ? (recurrence ?? RecurrenceRule.daily)
           : null,
+      reminder: reminder,
     );
     _tasks.add(task);
     _saveToPersistence();
