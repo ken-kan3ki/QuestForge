@@ -505,6 +505,23 @@ void main() {
   });
 
   group('7. TaskEditorScreen Reminder UI Flow (Sections 1, 2, 4, 7, 8, 21)', () {
+    /// Scrolls [finder] into view within the task-editor ListView.
+    Future<void> scrollToReminder(WidgetTester tester, Finder finder) async {
+      // Find the first (outermost) Scrollable inside the keyed ListView
+      final listViewScrollable = find
+          .descendant(
+            of: find.byKey(const Key('task-editor-list')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: listViewScrollable,
+      );
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('Custom reminder flow: toggle ON, pick date/time, validation prevents past scheduling', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -518,6 +535,7 @@ void main() {
 
       // Reminder switch is initially OFF
       final reminderSwitch = find.byKey(const Key('reminder-switch'));
+      await scrollToReminder(tester, reminderSwitch);
       expect(reminderSwitch, findsOneWidget);
       expect(find.byKey(const Key('reminder-type-selector')), findsNothing);
 
@@ -526,11 +544,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Custom and Recurring options appear
+      await scrollToReminder(tester, find.byKey(const Key('reminder-type-selector')));
       expect(find.byKey(const Key('reminder-type-selector')), findsOneWidget);
       expect(find.text('Custom'), findsOneWidget);
       expect(find.text('Recurring'), findsOneWidget);
 
       // Custom controls visible by default
+      await scrollToReminder(tester, find.byKey(const Key('reminder-custom-date-button')));
       expect(find.byKey(const Key('reminder-custom-date-button')), findsOneWidget);
       expect(find.byKey(const Key('reminder-custom-time-button')), findsOneWidget);
 
@@ -567,18 +587,22 @@ void main() {
       await tester.pump();
 
       // Turn on reminder
+      await scrollToReminder(tester, find.byKey(const Key('reminder-switch')));
       await tester.tap(find.byKey(const Key('reminder-switch')));
       await tester.pumpAndSettle();
 
       // Select Recurring
+      await scrollToReminder(tester, find.byKey(const Key('reminder-type-selector')));
       await tester.tap(find.text('Recurring'));
       await tester.pumpAndSettle();
 
       // Select Weekly
+      await scrollToReminder(tester, find.byKey(const Key('reminder-frequency-selector')));
       await tester.tap(find.text('Weekly'));
       await tester.pumpAndSettle();
 
       // Weekly chips visible
+      await scrollToReminder(tester, find.byKey(const Key('weekday-1')));
       expect(find.byKey(const Key('weekday-1')), findsOneWidget); // Mon
       expect(find.byKey(const Key('weekday-3')), findsOneWidget); // Wed
       expect(find.byKey(const Key('weekday-5')), findsOneWidget); // Fri
@@ -588,6 +612,7 @@ void main() {
         final chipFinder = find.byKey(Key('weekday-$d'));
         final chip = tester.widget<FilterChip>(chipFinder);
         if (chip.selected) {
+          await scrollToReminder(tester, chipFinder);
           await tester.tap(chipFinder);
           await tester.pumpAndSettle();
         }
@@ -598,11 +623,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Validation error shown!
+      await scrollToReminder(tester, find.byKey(const Key('reminder-validation-error')));
       expect(find.byKey(const Key('reminder-validation-error')), findsOneWidget);
       expect(find.text('Select at least one day for weekly reminder.'), findsOneWidget);
       expect(resultTask, isNull); // Did not save!
 
       // Select Monday + Wednesday + Friday
+      await scrollToReminder(tester, find.byKey(const Key('weekday-1')));
       await tester.tap(find.byKey(const Key('weekday-1')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('weekday-3')));
@@ -643,15 +670,19 @@ void main() {
       await tester.enterText(find.byKey(const Key('task-title-field')), 'Pay Rent');
       await tester.pump();
 
+      await scrollToReminder(tester, find.byKey(const Key('reminder-switch')));
       await tester.tap(find.byKey(const Key('reminder-switch')));
       await tester.pumpAndSettle();
 
+      await scrollToReminder(tester, find.byKey(const Key('reminder-type-selector')));
       await tester.tap(find.text('Recurring'));
       await tester.pumpAndSettle();
 
+      await scrollToReminder(tester, find.byKey(const Key('reminder-frequency-selector')));
       await tester.tap(find.text('Monthly'));
       await tester.pumpAndSettle();
 
+      await scrollToReminder(tester, find.byKey(const Key('day-of-month-field')));
       expect(find.byKey(const Key('day-of-month-field')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('save-task')));
@@ -682,14 +713,19 @@ void main() {
       // Verify title loaded
       expect(find.text('Team Standup'), findsOneWidget);
 
+      // Scroll the reminder switch into view
+      await scrollToReminder(tester, find.byKey(const Key('reminder-switch')));
+
       // Verify reminder is ON and type is Recurring
       final reminderSwitch = tester.widget<SwitchListTile>(find.byKey(const Key('reminder-switch')));
       expect(reminderSwitch.value, isTrue);
 
+      await scrollToReminder(tester, find.byKey(const Key('reminder-frequency-selector')));
       expect(find.text('Recurring'), findsOneWidget);
       expect(find.text('Weekly'), findsOneWidget);
 
       // Verify Mon, Wed, Fri chips are selected
+      await scrollToReminder(tester, find.byKey(const Key('weekday-1')));
       final monChip = tester.widget<FilterChip>(find.byKey(const Key('weekday-1')));
       final wedChip = tester.widget<FilterChip>(find.byKey(const Key('weekday-3')));
       final friChip = tester.widget<FilterChip>(find.byKey(const Key('weekday-5')));
@@ -701,6 +737,7 @@ void main() {
       expect(tueChip.selected, isFalse);
     });
   });
+
 
   group('8. SettingsScreen Daily Reminder UI (Section 16)', () {
     testWidgets('Toggling Settings Daily Reminder schedules and cancels via ReminderService', (tester) async {

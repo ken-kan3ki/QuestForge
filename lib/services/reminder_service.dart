@@ -154,11 +154,12 @@ class ReminderService {
   ///
   /// Automatically cancels any prior notifications for this task before scheduling.
   Future<void> scheduleTaskReminder(Task task) async {
-    // 1. Always cancel existing notifications for this task to avoid duplicates.
-    await cancelTaskReminders(task.id);
+    // 1. Always cancel existing in-memory notifications for this task to avoid duplicates synchronously.
+    _cancelTaskRemindersSync(task.id);
 
     final reminder = task.reminder;
     if (reminder == null || !reminder.enabled) {
+      await _saveToPersistence();
       return;
     }
 
@@ -243,20 +244,22 @@ class ReminderService {
     await _saveToPersistence();
   }
 
-  /// Cancels all scheduled notifications associated with [taskId].
-  ///
-  /// Does not affect reminders belonging to any other task or Settings.
-  Future<void> cancelTaskReminders(String taskId) async {
+  void _cancelTaskRemindersSync(String taskId) {
     final prefix = 'task_${taskId}_';
     final toRemove = _scheduled.keys
         .where((key) => key.startsWith(prefix) || _scheduled[key]?.taskId == taskId)
         .toList();
 
-    if (toRemove.isEmpty) return;
-
     for (final id in toRemove) {
       _scheduled.remove(id);
     }
+  }
+
+  /// Cancels all scheduled notifications associated with [taskId].
+  ///
+  /// Does not affect reminders belonging to any other task or Settings.
+  Future<void> cancelTaskReminders(String taskId) async {
+    _cancelTaskRemindersSync(taskId);
     await _saveToPersistence();
   }
 

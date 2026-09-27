@@ -333,6 +333,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
               ? AutovalidateMode.onUserInteraction
               : AutovalidateMode.disabled,
           child: ListView(
+            key: const Key('task-editor-list'),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
               TextFormField(
