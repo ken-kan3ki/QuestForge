@@ -11,11 +11,11 @@ enum QuestDifficulty {
   String get label {
     switch (this) {
       case QuestDifficulty.light:
-        return 'Light';
+        return 'Easy';
       case QuestDifficulty.standard:
-        return 'Standard';
+        return 'Normal';
       case QuestDifficulty.challenging:
-        return 'Challenging';
+        return 'Hard';
       case QuestDifficulty.custom:
         return 'Custom';
     }

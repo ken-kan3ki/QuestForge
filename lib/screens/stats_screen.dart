@@ -89,7 +89,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: _StatBlock(
                         key: const Key('stats-current-multiplier'),
                         icon: Icons.auto_awesome_rounded,
-                        label: 'XP Multiplier',
+                        label: 'Aura Multiplier',
                         value: '×${stats.currentMultiplier.toStringAsFixed(2)}',
                         unit: '',
                         colors: colors,
@@ -173,7 +173,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         icon: Icons.flash_on_rounded,
                         label: 'Today',
                         value: '${stats.xpEarnedToday}',
-                        unit: 'XP',
+                        unit: 'Aura',
                         colors: colors,
                         theme: theme,
                       ),
@@ -185,7 +185,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         icon: Icons.trending_up_rounded,
                         label: 'This Week',
                         value: '${stats.xpEarnedThisWeek}',
-                        unit: 'XP',
+                        unit: 'Aura',
                         colors: colors,
                         theme: theme,
                       ),
@@ -197,7 +197,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         icon: Icons.military_tech_rounded,
                         label: 'All-Time',
                         value: '${stats.totalXpAllTime}',
-                        unit: 'XP',
+                        unit: 'Aura',
                         colors: colors,
                         theme: theme,
                       ),
@@ -225,7 +225,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       segments: const [
                         ButtonSegment(
                           value: _ChartMetric.xp,
-                          label: Text('XP'),
+                          label: Text('Aura'),
                           icon: Icon(Icons.bolt, size: 14),
                         ),
                         ButtonSegment(
@@ -301,7 +301,7 @@ class _LevelProgressSection extends StatelessWidget {
             ),
             Text(
               key: const Key('stats-level-progress'),
-              '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP ($percent%)',
+              '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} Aura ($percent%)',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colors.onSurfaceVariant,
@@ -323,7 +323,7 @@ class _LevelProgressSection extends StatelessWidget {
         Text(
           stats.currentLevel >= 100
               ? 'MAX LEVEL'
-              : '${progress.xpToNextLevel} XP needed to reach Level ${stats.currentLevel + 1}',
+              : '${progress.xpToNextLevel} Aura needed to reach Level ${stats.currentLevel + 1}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colors.onSurfaceVariant,
           ),

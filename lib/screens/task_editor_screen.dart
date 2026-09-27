@@ -380,8 +380,8 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
               const SizedBox(height: 8),
               Text(
                 _questType == QuestType.habit
-                    ? 'Repeats on a schedule. Completing it today awards XP once and it returns when due again.'
-                    : 'One-time quest. Completing it awards XP and it stays finished.',
+                    ? 'Repeats on a schedule. Completing it today awards Aura once and it returns when due again.'
+                    : 'One-time quest. Completing it awards Aura and it stays finished.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -499,15 +499,15 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 segments: const [
                   ButtonSegment(
                     value: QuestDifficulty.light,
-                    label: Text('Light'),
+                    label: Text('Easy'),
                   ),
                   ButtonSegment(
                     value: QuestDifficulty.standard,
-                    label: Text('Standard'),
+                    label: Text('Normal'),
                   ),
                   ButtonSegment(
                     value: QuestDifficulty.challenging,
-                    label: Text('Challenging'),
+                    label: Text('Hard'),
                   ),
                   ButtonSegment(
                     value: QuestDifficulty.custom,
@@ -540,10 +540,10 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
-                  labelText: 'XP reward',
+                  labelText: 'Aura reward',
                   helperText: _difficulty == QuestDifficulty.custom
-                      ? 'Custom reward between 5 and 50 XP.'
-                      : '${_difficulty.label} difficulty awards ${_difficulty.defaultXp} base XP.',
+                      ? 'Custom reward between 5 and 50 Aura.'
+                      : '${_difficulty.label} difficulty awards ${_difficulty.defaultXp} base Aura.',
                 ),
                 validator: (value) => _validator.xpError(
                   value ?? '',

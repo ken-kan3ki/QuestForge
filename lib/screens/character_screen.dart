@@ -99,7 +99,7 @@ class CharacterScreen extends StatelessWidget {
                     const SizedBox(width: 16),
                     Expanded(
                       child: _StatBlock(
-                        label: 'XP multiplier',
+                        label: 'Aura multiplier',
                         value: '×${streak.currentMultiplier.toStringAsFixed(2)}',
                         unit: '',
                         icon: Icons.auto_awesome,
@@ -164,7 +164,7 @@ class _HeroHeader extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          '$totalXp XP earned',
+          '$totalXp Aura earned',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colors.onSurfaceVariant,
           ),
@@ -380,8 +380,8 @@ class _XpProgressBar extends StatelessWidget {
           children: [
             Text(
               isMaxLevel
-                  ? '${progress.xpSpanForCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP'
-                  : '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} XP',
+                  ? '${progress.xpSpanForCurrentLevel} / ${progress.xpSpanForCurrentLevel} Aura'
+                  : '${progress.xpIntoCurrentLevel} / ${progress.xpSpanForCurrentLevel} Aura',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -414,7 +414,7 @@ class _XpProgressBar extends StatelessWidget {
         Text(
           isMaxLevel
               ? 'MAX LEVEL'
-              : '${progress.xpToNextLevel} XP to level ${progress.level + 1}',
+              : '${progress.xpToNextLevel} Aura to level ${progress.level + 1}',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colors.onSurfaceVariant,
           ),

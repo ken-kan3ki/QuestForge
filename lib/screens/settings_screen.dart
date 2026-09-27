@@ -59,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: const Text('Restore from backup?'),
           content: const Text(
-            'Restoring a backup will replace your current quests, XP history, and streak. '
+            'Restoring a backup will replace your current quests, Aura history, and streak. '
             'This cannot be undone. Make sure you have exported your current progress first.',
           ),
           actions: [
@@ -99,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text(
             'Restored ${result.data!.tasks.length} quests and '
-            '${result.data!.xpTransactions.length} XP transactions successfully.',
+            '${result.data!.xpTransactions.length} Aura transactions successfully.',
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -251,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Export your quests, XP history, and streak to a portable offline file '
+                      'Export your quests, Aura history, and streak to a portable offline file '
                       'or import a backup created on another device.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,

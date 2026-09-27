@@ -42,16 +42,16 @@ class TaskValidator {
   String? xpError(String xpText, {int? originalXp}) {
     final parsed = int.tryParse(xpText.trim());
     if (parsed == null) {
-      return 'Enter a whole number for the XP reward.';
+      return 'Enter a whole number for the Aura reward.';
     }
     if (originalXp != null && parsed == originalXp) {
       return null;
     }
     if (parsed < minXp) {
-      return 'XP reward must be at least $minXp.';
+      return 'Aura reward must be at least $minXp.';
     }
     if (parsed > maxXp) {
-      return 'XP reward cannot exceed $maxXp.';
+      return 'Aura reward cannot exceed $maxXp.';
     }
     return null;
   }

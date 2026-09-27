@@ -82,7 +82,7 @@ class TaskTile extends StatelessWidget {
                     children: [
                       _MetaChip(
                         icon: Icons.bolt,
-                        label: '${task.xpReward} XP',
+                        label: '${task.xpReward} Aura',
                       ),
                       _MetaChip(
                         icon: task.questType == QuestType.habit
