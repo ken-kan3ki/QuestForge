@@ -79,6 +79,7 @@ class TaskController extends ChangeNotifier {
 
   AvatarProgression get avatarProgression =>
       _avatarEngine.progressionFor(
+        totalAura: totalXp,
         totalXp: totalXp,
         level: levelProgress.level,
         levelEngine: _levelEngine,

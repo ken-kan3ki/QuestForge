@@ -69,12 +69,13 @@ void main() {
   });
 
   group('Consecutive productive days', () {
-    test('consecutive days increase multiplier gradually (0.05 per day)', () {
-      final today = DateTime(2026, 9, 12, 18);
+    test('consecutive days increase multiplier starting on day 4 (0.05 per day after 3 days)', () {
+      final today = DateTime(2026, 9, 13, 18);
       final completions = [
         DateTime(2026, 9, 10, 10), // Day 1
         DateTime(2026, 9, 11, 11), // Day 2
-        DateTime(2026, 9, 12, 12), // Day 3 (today)
+        DateTime(2026, 9, 12, 12), // Day 3
+        DateTime(2026, 9, 13, 12), // Day 4 (today)
       ];
 
       final info = engine.calculate(
@@ -82,10 +83,50 @@ void main() {
         today: today,
       );
 
-      expect(info.streakLength, 3);
+      expect(info.streakLength, 4);
       expect(info.isTodayProductive, isTrue);
-      expect(info.currentMultiplier, 1.10);
-      expect(info.multiplierForNewReward, 1.10);
+      expect(info.currentMultiplier, 1.05);
+      expect(info.multiplierForNewReward, 1.05);
+    });
+
+    test('days 1, 2, and 3 maintain baseline 1.00x multiplier', () {
+      final completions = [
+        DateTime(2026, 9, 10, 10), // Day 1
+        DateTime(2026, 9, 11, 11), // Day 2
+        DateTime(2026, 9, 12, 12), // Day 3
+      ];
+
+      final info1 = engine.calculate(
+        completionDates: [completions[0]],
+        today: DateTime(2026, 9, 10, 18),
+      );
+      expect(info1.streakLength, 1);
+      expect(info1.currentMultiplier, 1.00);
+
+      final info2 = engine.calculate(
+        completionDates: completions.take(2),
+        today: DateTime(2026, 9, 11, 18),
+      );
+      expect(info2.streakLength, 2);
+      expect(info2.currentMultiplier, 1.00);
+
+      final info3 = engine.calculate(
+        completionDates: completions,
+        today: DateTime(2026, 9, 12, 18),
+      );
+      expect(info3.streakLength, 3);
+      expect(info3.currentMultiplier, 1.00);
+      expect(info3.multiplierForNewReward, 1.00);
+
+      // On Day 4 morning (before any task completed today), streak is 3 from yesterday:
+      final info4Morning = engine.calculate(
+        completionDates: completions,
+        today: DateTime(2026, 9, 13, 9),
+      );
+      expect(info4Morning.streakLength, 3);
+      expect(info4Morning.currentMultiplier, 1.00);
+      // Completing Day 4 will advance streak to 4 and trigger first boosted multiplier (1.05)
+      expect(info4Morning.multiplierForNewReward, 1.05);
     });
 
     test('maintains active streak from yesterday when today has not yet been completed', () {
@@ -103,9 +144,9 @@ void main() {
       // Streak from yesterday is 2 days
       expect(info.streakLength, 2);
       expect(info.isTodayProductive, isFalse);
-      expect(info.currentMultiplier, 1.05);
-      // Completing a task today will advance streak to 3 (multiplier 1.10)
-      expect(info.multiplierForNewReward, 1.10);
+      expect(info.currentMultiplier, 1.00);
+      // Completing a task today will advance streak to 3 (multiplier remains 1.00)
+      expect(info.multiplierForNewReward, 1.00);
     });
 
     test('advances streak once today is completed after yesterday', () {
@@ -122,16 +163,18 @@ void main() {
 
       expect(info.streakLength, 2);
       expect(info.isTodayProductive, isTrue);
-      expect(info.currentMultiplier, 1.05);
-      expect(info.multiplierForNewReward, 1.05);
+      expect(info.currentMultiplier, 1.00);
+      expect(info.multiplierForNewReward, 1.00);
     });
 
     test('supports custom daily bonus configured on the engine', () {
       const customEngine = StreakEngine(bonusPerDay: 0.10);
-      final today = DateTime(2026, 9, 12, 12);
+      final today = DateTime(2026, 9, 14, 12);
       final completions = [
         DateTime(2026, 9, 11, 10),
         DateTime(2026, 9, 12, 10),
+        DateTime(2026, 9, 13, 10),
+        DateTime(2026, 9, 14, 10),
       ];
 
       final info = customEngine.calculate(
@@ -139,7 +182,7 @@ void main() {
         today: today,
       );
 
-      expect(info.streakLength, 2);
+      expect(info.streakLength, 4);
       expect(info.currentMultiplier, 1.10);
     });
   });
@@ -260,18 +303,21 @@ void main() {
 
       expect(info.streakLength, 2);
       expect(info.isTodayProductive, isTrue);
-      expect(info.currentMultiplier, 1.05);
-      expect(info.multiplierForNewReward, 1.05);
+      expect(info.currentMultiplier, 1.00);
+      expect(info.multiplierForNewReward, 1.00);
     });
   });
 
   group('Multiplier cap', () {
-    test('caps multiplier at hard maximum of 1.50x', () {
+    test('caps multiplier at hard maximum of 1.50x and starts positive boost on day 4', () {
       expect(engine.calculateMultiplier(1), 1.00);
-      expect(engine.calculateMultiplier(2), 1.05);
-      expect(engine.calculateMultiplier(5), 1.20);
-      expect(engine.calculateMultiplier(11), 1.50);
-      expect(engine.calculateMultiplier(12), 1.50);
+      expect(engine.calculateMultiplier(2), 1.00);
+      expect(engine.calculateMultiplier(3), 1.00);
+      expect(engine.calculateMultiplier(4), 1.05);
+      expect(engine.calculateMultiplier(5), 1.10);
+      expect(engine.calculateMultiplier(7), 1.20);
+      expect(engine.calculateMultiplier(13), 1.50);
+      expect(engine.calculateMultiplier(14), 1.50);
       expect(engine.calculateMultiplier(30), 1.50);
       expect(engine.calculateMultiplier(100), 1.50);
     });
@@ -308,7 +354,7 @@ void main() {
       );
 
       expect(info.streakLength, 2);
-      expect(info.currentMultiplier, 1.05);
+      expect(info.currentMultiplier, 1.00);
     });
 
     test('handles leap year transition (Feb 28 -> Feb 29 -> Mar 1, 2024)', () {
@@ -325,7 +371,7 @@ void main() {
       );
 
       expect(info.streakLength, 3);
-      expect(info.currentMultiplier, 1.10);
+      expect(info.currentMultiplier, 1.00);
     });
 
     test('handles non-leap year transition (Feb 28 -> Mar 1, 2026)', () {
@@ -341,7 +387,7 @@ void main() {
       );
 
       expect(info.streakLength, 2);
-      expect(info.currentMultiplier, 1.05);
+      expect(info.currentMultiplier, 1.00);
     });
 
     test('handles year boundaries (December 31 to January 1)', () {
@@ -357,7 +403,7 @@ void main() {
       );
 
       expect(info.streakLength, 2);
-      expect(info.currentMultiplier, 1.05);
+      expect(info.currentMultiplier, 1.00);
     });
 
     test('two tasks minutes apart across midnight are two consecutive days', () {
@@ -390,7 +436,7 @@ void main() {
       );
 
       expect(info.streakLength, 2);
-      expect(info.currentMultiplier, 1.05);
+      expect(info.currentMultiplier, 1.00);
     });
 
     test('works deterministically with unsorted completion dates', () {

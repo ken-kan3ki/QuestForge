@@ -25,6 +25,7 @@ class AvatarTierDefinition {
     required this.title,
     required this.minLevel,
     required this.maxLevel,
+    this.auraThreshold = 0,
     required this.icon,
     required this.badgeSymbol,
     required this.gradientColors,
@@ -44,6 +45,9 @@ class AvatarTierDefinition {
 
   /// Maximum level for this tier (inclusive).
   final int maxLevel;
+
+  /// Total cumulative Aura required to reach this evolution tier.
+  final int auraThreshold;
 
   /// Primary icon representing this avatar tier visually.
   final IconData icon;

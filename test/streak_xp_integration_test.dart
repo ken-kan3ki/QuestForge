@@ -64,7 +64,7 @@ void main() {
       expect(controller.xpTransactions[2].finalXp, 15);
     });
 
-    test('consecutive productive days increase multiplier and final XP', () {
+    test('consecutive productive days increase multiplier and final XP after 3 days', () {
       var now = DateTime.utc(2026, 9, 10, 10, 0);
       final repository = InMemoryTaskRepository(clock: () => now);
       final controller = TaskController(repository, clock: () => now);
@@ -72,27 +72,37 @@ void main() {
       final task1 = controller.createTask(title: 'Day 1 Quest', xpReward: 20);
       final task2 = controller.createTask(title: 'Day 2 Quest', xpReward: 20);
       final task3 = controller.createTask(title: 'Day 3 Quest', xpReward: 20);
+      final task4 = controller.createTask(title: 'Day 4 Quest', xpReward: 20);
 
+      // Day 1: 1.00x
       controller.completeTask(task1.id);
       expect(controller.xpTransactions[0].multiplier, 1.00);
       expect(controller.xpTransactions[0].finalXp, 20);
       expect(controller.currentStreak, 1);
 
+      // Day 2: 1.00x (streak 2)
       now = DateTime.utc(2026, 9, 11, 14, 0);
       controller.completeTask(task2.id);
-      expect(controller.xpTransactions[1].multiplier, 1.05);
-      // 20 * 1.05 = 21
-      expect(controller.xpTransactions[1].finalXp, 21);
+      expect(controller.xpTransactions[1].multiplier, 1.00);
+      expect(controller.xpTransactions[1].finalXp, 20);
       expect(controller.currentStreak, 2);
 
+      // Day 3: 1.00x (streak 3)
       now = DateTime.utc(2026, 9, 12, 9, 30);
       controller.completeTask(task3.id);
-      expect(controller.xpTransactions[2].multiplier, 1.10);
-      // 20 * 1.10 = 22
-      expect(controller.xpTransactions[2].finalXp, 22);
+      expect(controller.xpTransactions[2].multiplier, 1.00);
+      expect(controller.xpTransactions[2].finalXp, 20);
       expect(controller.currentStreak, 3);
 
-      expect(controller.totalXp, 20 + 21 + 22);
+      // Day 4: 1.05x (streak 4) — first positive boosted multiplier
+      now = DateTime.utc(2026, 9, 13, 11, 0);
+      controller.completeTask(task4.id);
+      expect(controller.xpTransactions[3].multiplier, 1.05);
+      // 20 * 1.05 = 21
+      expect(controller.xpTransactions[3].finalXp, 21);
+      expect(controller.currentStreak, 4);
+
+      expect(controller.totalXp, 20 + 20 + 20 + 21);
     });
 
     test('all tasks completed on the same consecutive day receive the day multiplier', () {
@@ -110,18 +120,16 @@ void main() {
 
       now = DateTime.utc(2026, 9, 11, 8, 0);
       controller.completeTask(t2.id);
-      expect(controller.xpTransactions[1].multiplier, 1.05);
-      // 40 * 1.05 = 42
-      expect(controller.xpTransactions[1].finalXp, 42);
+      expect(controller.xpTransactions[1].multiplier, 1.00);
+      expect(controller.xpTransactions[1].finalXp, 40);
 
       now = DateTime.utc(2026, 9, 11, 20, 0);
       controller.completeTask(t3.id);
-      expect(controller.xpTransactions[2].multiplier, 1.05);
-      // 60 * 1.05 = 63
-      expect(controller.xpTransactions[2].finalXp, 63);
+      expect(controller.xpTransactions[2].multiplier, 1.00);
+      expect(controller.xpTransactions[2].finalXp, 60);
 
       expect(controller.currentStreak, 2);
-      expect(controller.totalXp, 40 + 42 + 63);
+      expect(controller.totalXp, 40 + 40 + 60);
     });
 
     test('one missed day breaks streak but does NOT deduct XP, restart gives 1.00x', () {
@@ -138,7 +146,7 @@ void main() {
       controller.completeTask(t2.id);
 
       final xpBeforeBreak = controller.totalXp;
-      expect(xpBeforeBreak, 20 + 21); // 41
+      expect(xpBeforeBreak, 20 + 20); // 40 (Day 1: 20, Day 2: 20 at 1.00x)
       expect(controller.currentStreak, 2);
 
       // Day 3 (2026-09-12) is missed! Check on Day 3:
@@ -160,7 +168,7 @@ void main() {
       expect(controller.xpTransactions[2].finalXp, 20);
 
       // Past XP was NOT deducted
-      expect(controller.totalXp, 41 + 20);
+      expect(controller.totalXp, 40 + 20);
     });
 
     test('multiplier cap enforces maximum of 1.50x', () {
@@ -168,8 +176,8 @@ void main() {
       final repository = InMemoryTaskRepository(clock: () => now);
       final controller = TaskController(repository, clock: () => now);
 
-      // Complete 12 consecutive days
-      for (var day = 1; day <= 12; day++) {
+      // Complete 14 consecutive days
+      for (var day = 1; day <= 14; day++) {
         now = DateTime.utc(2026, 9, day, 12, 0);
         final task = controller.createTask(
           title: 'Quest $day',
@@ -178,24 +186,32 @@ void main() {
         controller.completeTask(task.id);
       }
 
-      expect(controller.xpTransactions, hasLength(12));
+      expect(controller.xpTransactions, hasLength(14));
 
       // Day 1: 1.00
       expect(controller.xpTransactions[0].multiplier, 1.00);
       expect(controller.xpTransactions[0].finalXp, 100);
 
-      // Day 2: 1.05
-      expect(controller.xpTransactions[1].multiplier, 1.05);
-      expect(controller.xpTransactions[1].finalXp, 105);
+      // Day 2: 1.00
+      expect(controller.xpTransactions[1].multiplier, 1.00);
+      expect(controller.xpTransactions[1].finalXp, 100);
 
-      // Day 11 reaches 1.50
-      expect(controller.xpTransactions[10].multiplier, 1.50);
-      expect(controller.xpTransactions[10].finalXp, 150);
+      // Day 3: 1.00
+      expect(controller.xpTransactions[2].multiplier, 1.00);
+      expect(controller.xpTransactions[2].finalXp, 100);
 
-      // Day 12 is capped at 1.50x
-      expect(controller.xpTransactions[11].multiplier, 1.50);
-      expect(controller.xpTransactions[11].finalXp, 150);
-      expect(controller.currentStreak, 12);
+      // Day 4: 1.05 (first boosted multiplier)
+      expect(controller.xpTransactions[3].multiplier, 1.05);
+      expect(controller.xpTransactions[3].finalXp, 105);
+
+      // Day 13 reaches 1.50
+      expect(controller.xpTransactions[12].multiplier, 1.50);
+      expect(controller.xpTransactions[12].finalXp, 150);
+
+      // Day 14 is capped at 1.50x
+      expect(controller.xpTransactions[13].multiplier, 1.50);
+      expect(controller.xpTransactions[13].finalXp, 150);
+      expect(controller.currentStreak, 14);
       expect(controller.currentMultiplier, 1.50);
     });
 
@@ -223,17 +239,29 @@ void main() {
       controller.completeTask(t1.id);
       expect(controller.xpTransactions[0].finalXp, 25);
 
-      // Day 2 (1.05x): 25 * 1.05 = 26.25 -> rounded to 26
+      // Day 2 (1.00x)
       now = DateTime.utc(2026, 9, 11, 10, 0);
       final t2 = controller.createTask(title: 'Quest 2', xpReward: 25);
       controller.completeTask(t2.id);
-      expect(controller.xpTransactions[1].finalXp, 26);
+      expect(controller.xpTransactions[1].finalXp, 25);
 
-      // Day 3 (1.10x): 35 * 1.10 = 38.50 -> rounded to 39
+      // Day 3 (1.00x)
       now = DateTime.utc(2026, 9, 12, 10, 0);
       final t3 = controller.createTask(title: 'Quest 3', xpReward: 35);
       controller.completeTask(t3.id);
-      expect(controller.xpTransactions[2].finalXp, 39);
+      expect(controller.xpTransactions[2].finalXp, 35);
+
+      // Day 4 (1.05x): 25 * 1.05 = 26.25 -> rounded to 26
+      now = DateTime.utc(2026, 9, 13, 10, 0);
+      final t4 = controller.createTask(title: 'Quest 4', xpReward: 25);
+      controller.completeTask(t4.id);
+      expect(controller.xpTransactions[3].finalXp, 26);
+
+      // Day 5 (1.10x): 35 * 1.10 = 38.50 -> rounded to 39
+      now = DateTime.utc(2026, 9, 14, 10, 0);
+      final t5 = controller.createTask(title: 'Quest 5', xpReward: 35);
+      controller.completeTask(t5.id);
+      expect(controller.xpTransactions[4].finalXp, 39);
     });
   });
 }

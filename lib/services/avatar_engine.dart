@@ -25,6 +25,7 @@ class AvatarEngine {
       title: 'Yowaimo',
       minLevel: 1,
       maxLevel: 4,
+      auraThreshold: 0,
       icon: Icons.spa_outlined,
       badgeSymbol: '',
       gradientColors: [Color(0xFF4A5568), Color(0xFF2D3748)],
@@ -36,6 +37,7 @@ class AvatarEngine {
       title: 'Karen',
       minLevel: 5,
       maxLevel: 11,
+      auraThreshold: 181,
       icon: Icons.campaign_outlined,
       badgeSymbol: '',
       gradientColors: [Color(0xFFE53E3E), Color(0xFF9B2C2C)],
@@ -47,6 +49,7 @@ class AvatarEngine {
       title: 'Skinny',
       minLevel: 12,
       maxLevel: 20,
+      auraThreshold: 596,
       icon: Icons.directions_run,
       badgeSymbol: '',
       gradientColors: [Color(0xFFDD6B20), Color(0xFFC05621)],
@@ -58,6 +61,7 @@ class AvatarEngine {
       title: 'NPC',
       minLevel: 21,
       maxLevel: 32,
+      auraThreshold: 1361,
       icon: Icons.smart_toy_outlined,
       badgeSymbol: '',
       gradientColors: [Color(0xFF718096), Color(0xFF4A5568)],
@@ -69,6 +73,7 @@ class AvatarEngine {
       title: 'Sigma',
       minLevel: 33,
       maxLevel: 47,
+      auraThreshold: 2904,
       icon: Icons.visibility,
       badgeSymbol: '',
       gradientColors: [Color(0xFF2B6CB0), Color(0xFF1A365D)],
@@ -80,6 +85,7 @@ class AvatarEngine {
       title: 'Alpha',
       minLevel: 48,
       maxLevel: 65,
+      auraThreshold: 5916,
       icon: Icons.workspace_premium,
       badgeSymbol: '',
       gradientColors: [Color(0xFFC53030), Color(0xFF742A2A)],
@@ -91,6 +97,7 @@ class AvatarEngine {
       title: 'Gigachad',
       minLevel: 66,
       maxLevel: 82,
+      auraThreshold: 11565,
       icon: Icons.diamond_outlined,
       badgeSymbol: '',
       gradientColors: [Color(0xFFD69E2E), Color(0xFF744210)],
@@ -102,6 +109,7 @@ class AvatarEngine {
       title: 'Super Saiyan',
       minLevel: 83,
       maxLevel: 99,
+      auraThreshold: 19434,
       icon: Icons.flare,
       badgeSymbol: '',
       gradientColors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
@@ -113,6 +121,7 @@ class AvatarEngine {
       title: 'Super Saiyan God',
       minLevel: 100,
       maxLevel: 100,
+      auraThreshold: 30265,
       icon: Icons.auto_awesome,
       badgeSymbol: '',
       gradientColors: [Color(0xFFFF0055), Color(0xFFFF4500)],
@@ -131,34 +140,37 @@ class AvatarEngine {
 
   /// Computes the complete [AvatarProgression] for a player.
   ///
-  /// Evolution progress represents progress through the current evolution tier:
-  /// - Level 1  -> beginning of Yowaimo (0%)
-  /// - Level 4  -> 100% Yowaimo (100%)
-  /// - Level 5  -> beginning of Karen (0%)
-  /// - Level 11 -> 100% Karen (100%)
-  /// - Level 99 -> 100% Super Saiyan (100%)
-  /// - Level 100 -> 100% Super Saiyan God (100%)
+  /// Source of truth is total Aura earned from completing tasks.
+  /// Evolution tier is determined by total Aura matching or exceeding tier thresholds.
+  /// Evolution progress within non-final tiers is calculated from Aura earned since
+  /// the previous evolution threshold:
+  /// `(totalAura - previousThreshold) / (currentThreshold - previousThreshold)`.
+  /// At maximum progression (Super Saiyan God / Level 100), progress is exactly 100% (1.0).
   AvatarProgression progressionFor({
+    int? totalAura,
     int? totalXp,
     int? level,
     LevelEngine? levelEngine,
   }) {
     final le = levelEngine ?? this.levelEngine;
 
-    final int safeLevel;
-    if (level != null) {
-      safeLevel = level < 1 ? 1 : (level > 100 ? 100 : level);
+    final int effectiveAura;
+    if (totalAura != null) {
+      effectiveAura = totalAura;
     } else if (totalXp != null) {
-      final safeXp = totalXp < 0 ? 0 : totalXp;
-      safeLevel = le.levelFromTotalXp(safeXp);
+      effectiveAura = totalXp;
+    } else if (level != null) {
+      effectiveAura = le.totalXpRequiredForLevel(level);
     } else {
-      safeLevel = 1;
+      effectiveAura = 0;
     }
 
-    // Find the matching tier index
+    final safeAura = effectiveAura < 0 ? 0 : effectiveAura;
+
+    // Find the matching tier index based on total Aura
     var matchIndex = 0;
-    for (var i = 0; i < tiers.length; i++) {
-      if (tiers[i].containsLevel(safeLevel)) {
+    for (var i = tiers.length - 1; i >= 0; i--) {
+      if (safeAura >= tiers[i].auraThreshold) {
         matchIndex = i;
         break;
       }
@@ -169,32 +181,26 @@ class AvatarEngine {
     final nextDef = hasNext ? tiers[matchIndex + 1] : null;
 
     final double progress;
-    if (safeLevel >= 100 || currentDef.maxLevel == currentDef.minLevel) {
+    final int? currentTierAura;
+    final int? tierAuraRequired;
+
+    if (!hasNext) {
+      // Final evolution tier (Super Saiyan God)
       progress = 1.0;
+      currentTierAura = null;
+      tierAuraRequired = null;
     } else {
-      final span = currentDef.maxLevel - currentDef.minLevel;
-      progress = ((safeLevel - currentDef.minLevel) / span).clamp(0.0, 1.0);
+      final previousThreshold = currentDef.auraThreshold;
+      final currentThreshold = nextDef!.auraThreshold;
+      final span = currentThreshold - previousThreshold;
+      final intoTier = safeAura - previousThreshold;
+
+      tierAuraRequired = span;
+      currentTierAura = intoTier.clamp(0, span);
+      progress = span > 0 ? (currentTierAura / span).clamp(0.0, 1.0) : 1.0;
     }
 
-    final int? currentTierXp;
-    final int? tierTotalXp;
-    if (totalXp != null) {
-      final tierStartXp = le.totalXpRequiredForLevel(currentDef.minLevel);
-      final tierEndXp = le.totalXpRequiredForLevel(
-        currentDef.maxLevel >= 100 ? 100 : currentDef.maxLevel + 1,
-      );
-      final span = tierEndXp - tierStartXp;
-      if (span > 0) {
-        tierTotalXp = span;
-        currentTierXp = (totalXp - tierStartXp).clamp(0, span);
-      } else {
-        tierTotalXp = null;
-        currentTierXp = null;
-      }
-    } else {
-      currentTierXp = null;
-      tierTotalXp = null;
-    }
+    final int safeLevel = level ?? le.levelFromTotalXp(safeAura);
 
     return AvatarProgression(
       tier: currentDef.tier,
@@ -206,9 +212,14 @@ class AvatarEngine {
       nextTier: nextDef?.tier,
       nextTitle: nextDef?.title,
       definition: currentDef,
-      currentTierXp: currentTierXp,
-      tierTotalXp: tierTotalXp,
+      currentTierXp: currentTierAura,
+      tierTotalXp: tierAuraRequired,
     );
+  }
+
+  /// Convenience method to compute [AvatarProgression] from [totalAura].
+  AvatarProgression progressionForAura(int totalAura, {LevelEngine? levelEngine}) {
+    return progressionFor(totalAura: totalAura, levelEngine: levelEngine);
   }
 
   /// Convenience method to compute [AvatarProgression] when only [level] is available.

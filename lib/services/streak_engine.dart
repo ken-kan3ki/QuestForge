@@ -177,11 +177,18 @@ class StreakEngine {
   }
 
   /// Returns the XP multiplier for a given [streakLength], capped at [maxMultiplier].
+  ///
+  /// Positive multiplier progression begins after 3 consecutive productive days:
+  /// - Day 1: 1.00x
+  /// - Day 2: 1.00x
+  /// - Day 3: 1.00x
+  /// - Day 4: 1.05x (first boosted multiplier)
+  /// - Day 5+: increases by [bonusPerDay] up to [maxMultiplier]
   double calculateMultiplier(int streakLength) {
-    if (streakLength <= 1) {
+    if (streakLength <= 3) {
       return baseMultiplier;
     }
-    final raw = baseMultiplier + (streakLength - 1) * bonusPerDay;
+    final raw = baseMultiplier + (streakLength - 3) * bonusPerDay;
     if (raw >= maxMultiplier) {
       return maxMultiplier;
     }

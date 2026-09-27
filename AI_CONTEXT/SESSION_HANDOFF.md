@@ -1,55 +1,85 @@
 # Session Handoff
 
-> Template for AI agents to fill in before a session ends (token limit reached, task paused, etc.).  
-> Update this file before stopping. Keep it concise — one fact per line where possible.
-
----
-
-**Updated:** <!-- YYYY-MM-DD HH:MM -->  
-**Agent/session:** <!-- brief description or conversation ID -->
+**Updated:** 2026-09-27  
+**Agent/session:** Claude Sonnet 4.6 / Gemini 3.8 Flash
 
 ---
 
 ## Task
 
-<!-- One-sentence description of what was being worked on. -->
+Refactor avatar evolution to use total Aura earned from completing tasks as source of truth, and shift positive streak multiplier progression to begin on Day 4 after 3 consecutive productive days.
 
 ## Completed
 
-<!-- Bullet list of what was actually finished this session. -->
+- Converted avatar evolution tier thresholds to cumulative Aura using existing LevelEngine formula:
+  - Tier 1 — Yowaimo: 0 Aura
+  - Tier 2 — Karen: 181 Aura
+  - Tier 3 — Skinny: 596 Aura
+  - Tier 4 — NPC: 1361 Aura
+  - Tier 5 — Sigma: 2904 Aura
+  - Tier 6 — Alpha: 5916 Aura
+  - Tier 7 — Gigachad: 11565 Aura
+  - Tier 8 — Super Saiyan: 19434 Aura
+  - Tier 9 — Super Saiyan God: 30265 Aura
+- Level 100 total Aura required: **30265 Aura**.
+- Refactored `AvatarEngine.progressionFor` to calculate progress within current tier using `(totalAura - previousThreshold) / (currentThreshold - previousThreshold)` clamped to `[0.0, 1.0]`. Final tier fixed at 1.0 (100%).
+- Updated `StreakEngine.calculateMultiplier` to return 1.00x for Day 1–3, and 1.05x (first boosted multiplier) on Day 4, with later progression preserved.
+- Added comprehensive edge-case tests in `test/avatar_progression_test.dart` (23 tests passing).
+- Updated streak tests in `test/streak_engine_test.dart` and `test/streak_xp_integration_test.dart` (all passing).
 
 ## In Progress
 
-<!-- What is partially done and needs to be continued. -->
+None.
 
 ## Files Changed
 
-<!-- Exact file paths of every file modified this session. -->
+- `lib/models/avatar_tier.dart`
+- `lib/services/avatar_engine.dart`
+- `lib/services/streak_engine.dart`
+- `lib/state/task_controller.dart`
+- `test/avatar_progression_test.dart`
+- `test/streak_engine_test.dart`
+- `test/streak_xp_integration_test.dart`
+- `AI_CONTEXT/CURRENT_STATE.md`
+- `AI_CONTEXT/SESSION_HANDOFF.md`
+- `AI_CONTEXT/CHANGELOG.md`
 
 ## Tests Run
 
-<!-- Exact commands run (e.g., `flutter test`, `flutter test test/level_engine_test.dart`). -->
+- `flutter analyze`
+- `flutter test test/avatar_progression_test.dart`
+- `flutter test test/streak_engine_test.dart test/streak_xp_integration_test.dart`
+- `flutter test`
+- `flutter run -d windows`
 
 ## Test Results
 
-<!-- Pass / Fail / count. Example: All 17 test files passed (143 tests). -->
+- `flutter analyze`: PASS (0 issues)
+- `test/avatar_progression_test.dart`: PASS (23/23 tests)
+- `test/streak_engine_test.dart` & `test/streak_xp_integration_test.dart`: PASS (all tests)
+- Full `flutter test`: 138 passing, 17 failing (all pre-existing string mismatches from previous commit `eba9da9`)
+- `flutter run -d windows`: FAIL (Environment lacks Visual Studio C++ toolchain)
 
 ## Known Failures
 
-<!-- Any test or build failures seen. Include exact error messages if short. -->
+- `flutter run -d windows` failed due to missing Visual Studio C++ toolchain in environment.
+- Pre-existing failures in unrelated test files expecting "XP" instead of "Aura".
 
 ## Important Discoveries
 
-<!-- Anything found during this session that future agents need to know. -->
+- Total Aura required to reach Level 100 is exactly 30,265 Aura under the implemented `LevelEngine` formula: `round(40 + 2*L + 0.05*L^2)`.
+- Pre-existing commit `eba9da9` updated UI labels from "XP" to "Aura", causing pre-existing mismatches in tests not yet updated for that rename.
 
 ## Next Exact Action
 
-<!-- The very first thing the next AI session should do. Be specific. -->
+Task completed. Ready for next user instruction.
 
 ## Do Not Repeat
 
-<!-- Things already tried that did not work — to avoid wasted effort. -->
+- Do not calculate evolution progress from task counts or directly from level.
+- Do not start positive streak multiplier on Day 2 or 3.
 
 ## Do Not Touch
 
-<!-- Files or systems that must not be modified for the current task. -->
+- Do not modify LevelEngine progression formula.
+- Do not alter game constants or quest difficulty base values.

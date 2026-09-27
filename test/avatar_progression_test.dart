@@ -4,6 +4,7 @@ import 'package:prod/models/avatar_progression.dart';
 import 'package:prod/models/avatar_tier.dart';
 import 'package:prod/screens/character_screen.dart';
 import 'package:prod/services/avatar_engine.dart';
+import 'package:prod/services/level_engine.dart';
 import 'package:prod/services/task_repository.dart';
 import 'package:prod/services/xp_ledger.dart';
 import 'package:prod/state/task_controller.dart';
@@ -12,95 +13,228 @@ import 'package:prod/widgets/player_avatar.dart';
 
 void main() {
   const engine = AvatarEngine();
+  const levelEngine = LevelEngine();
 
-  group('Avatar Progression Tier Boundaries (Section 13 & 24)', () {
-    const boundaryCases = <int, (AvatarTier, String)>{
-      1: (AvatarTier.yowaimo, 'Yowaimo'),
-      4: (AvatarTier.yowaimo, 'Yowaimo'),
-      5: (AvatarTier.karen, 'Karen'),
-      11: (AvatarTier.karen, 'Karen'),
-      12: (AvatarTier.skinny, 'Skinny'),
-      20: (AvatarTier.skinny, 'Skinny'),
-      21: (AvatarTier.npc, 'NPC'),
-      32: (AvatarTier.npc, 'NPC'),
-      33: (AvatarTier.sigma, 'Sigma'),
-      47: (AvatarTier.sigma, 'Sigma'),
-      48: (AvatarTier.alpha, 'Alpha'),
-      65: (AvatarTier.alpha, 'Alpha'),
-      66: (AvatarTier.gigachad, 'Gigachad'),
-      82: (AvatarTier.gigachad, 'Gigachad'),
-      83: (AvatarTier.superSaiyan, 'Super Saiyan'),
-      99: (AvatarTier.superSaiyan, 'Super Saiyan'),
-      100: (AvatarTier.superSaiyanGod, 'Super Saiyan God'),
+  group('Avatar Evolution Tier Boundaries (Total Aura as Source of Truth)', () {
+    // Exact calculated Aura thresholds from the implemented level progression curve:
+    // Tier 1 — Yowaimo: 0 Aura (minLevel 1)
+    // Tier 2 — Karen: 181 Aura (minLevel 5)
+    // Tier 3 — Skinny: 596 Aura (minLevel 12)
+    // Tier 4 — NPC: 1361 Aura (minLevel 21)
+    // Tier 5 — Sigma: 2904 Aura (minLevel 33)
+    // Tier 6 — Alpha: 5916 Aura (minLevel 48)
+    // Tier 7 — Gigachad: 11565 Aura (minLevel 66)
+    // Tier 8 — Super Saiyan: 19434 Aura (minLevel 83)
+    // Tier 9 — Super Saiyan God: 30265 Aura (minLevel 100)
+    const tierThresholds = <int, (AvatarTier, String)>{
+      0: (AvatarTier.yowaimo, 'Yowaimo'),
+      181: (AvatarTier.karen, 'Karen'),
+      596: (AvatarTier.skinny, 'Skinny'),
+      1361: (AvatarTier.npc, 'NPC'),
+      2904: (AvatarTier.sigma, 'Sigma'),
+      5916: (AvatarTier.alpha, 'Alpha'),
+      11565: (AvatarTier.gigachad, 'Gigachad'),
+      19434: (AvatarTier.superSaiyan, 'Super Saiyan'),
+      30265: (AvatarTier.superSaiyanGod, 'Super Saiyan God'),
     };
 
-    boundaryCases.forEach((level, expected) {
-      test('level $level maps to ${expected.$2} (${expected.$1.name})', () {
-        final progression = engine.progressionFor(level: level);
+    tierThresholds.forEach((threshold, expected) {
+      test('totalAura $threshold maps to ${expected.$2} (${expected.$1.name})', () {
+        final progression = engine.progressionFor(totalAura: threshold);
         expect(progression.tier, expected.$1);
         expect(progression.title, expected.$2);
       });
     });
+
+    test('exact formula cumulative Aura to reach Level 100 is 30,265', () {
+      expect(levelEngine.totalXpRequiredForLevel(100), 30265);
+    });
   });
 
-  group('Avatar Evolution Progress (Section 14 & 24)', () {
-    test('beginning and end of each tier have exact 0.0 and 1.0 progress', () {
-      // Yowaimo 1-4
-      expect(engine.progressionFor(level: 1).progress, 0.0);
-      expect(engine.progressionFor(level: 4).progress, 1.0);
-
-      // Karen 5-11
-      expect(engine.progressionFor(level: 5).progress, 0.0);
-      expect(engine.progressionFor(level: 11).progress, 1.0);
-
-      // Skinny 12-20
-      expect(engine.progressionFor(level: 12).progress, 0.0);
-      expect(engine.progressionFor(level: 20).progress, 1.0);
-
-      // NPC 21-32
-      expect(engine.progressionFor(level: 21).progress, 0.0);
-      expect(engine.progressionFor(level: 32).progress, 1.0);
-
-      // Sigma 33-47
-      expect(engine.progressionFor(level: 33).progress, 0.0);
-      expect(engine.progressionFor(level: 47).progress, 1.0);
-
-      // Alpha 48-65
-      expect(engine.progressionFor(level: 48).progress, 0.0);
-      expect(engine.progressionFor(level: 65).progress, 1.0);
-
-      // Gigachad 66-82
-      expect(engine.progressionFor(level: 66).progress, 0.0);
-      expect(engine.progressionFor(level: 82).progress, 1.0);
-
-      // Super Saiyan 83-99
-      expect(engine.progressionFor(level: 83).progress, 0.0);
-      expect(engine.progressionFor(level: 99).progress, 1.0);
-
-      // Super Saiyan God 100
-      expect(engine.progressionFor(level: 100).progress, 1.0);
+  group('Avatar Evolution Edge Cases', () {
+    test('Aura below first threshold clamps to Tier 1 Yowaimo with 0.0 progress', () {
+      final pNeg = engine.progressionFor(totalAura: -50);
+      expect(pNeg.tier, AvatarTier.yowaimo);
+      expect(pNeg.title, 'Yowaimo');
+      expect(pNeg.progress, 0.0);
     });
 
-    test('progress is always between 0.0 and 1.0 across all levels', () {
-      for (var lvl = -5; lvl <= 120; lvl++) {
-        final p = engine.progressionFor(level: lvl);
-        expect(p.progress, greaterThanOrEqualTo(0.0));
+    test('Aura exactly at each evolution threshold starts new tier with 0.0 progress (or 1.0 for max)', () {
+      // Tier 1 (0) -> 0.0
+      expect(engine.progressionFor(totalAura: 0).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 0).tier, AvatarTier.yowaimo);
+
+      // Tier 2 (181) -> 0.0
+      expect(engine.progressionFor(totalAura: 181).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 181).tier, AvatarTier.karen);
+
+      // Tier 3 (596) -> 0.0
+      expect(engine.progressionFor(totalAura: 596).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 596).tier, AvatarTier.skinny);
+
+      // Tier 4 (1361) -> 0.0
+      expect(engine.progressionFor(totalAura: 1361).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 1361).tier, AvatarTier.npc);
+
+      // Tier 5 (2904) -> 0.0
+      expect(engine.progressionFor(totalAura: 2904).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 2904).tier, AvatarTier.sigma);
+
+      // Tier 6 (5916) -> 0.0
+      expect(engine.progressionFor(totalAura: 5916).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 5916).tier, AvatarTier.alpha);
+
+      // Tier 7 (11565) -> 0.0
+      expect(engine.progressionFor(totalAura: 11565).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 11565).tier, AvatarTier.gigachad);
+
+      // Tier 8 (19434) -> 0.0
+      expect(engine.progressionFor(totalAura: 19434).progress, 0.0);
+      expect(engine.progressionFor(totalAura: 19434).tier, AvatarTier.superSaiyan);
+
+      // Tier 9 (30265) -> 1.0 (final evolution)
+      expect(engine.progressionFor(totalAura: 30265).progress, 1.0);
+      expect(engine.progressionFor(totalAura: 30265).tier, AvatarTier.superSaiyanGod);
+    });
+
+    test('Aura immediately below each threshold belongs to previous tier with high progress', () {
+      // 180 is immediately below Karen threshold (181) -> Yowaimo
+      final p180 = engine.progressionFor(totalAura: 180);
+      expect(p180.tier, AvatarTier.yowaimo);
+      expect(p180.progress, closeTo(180 / 181, 1e-9));
+
+      // 595 is immediately below Skinny threshold (596) -> Karen
+      final p595 = engine.progressionFor(totalAura: 595);
+      expect(p595.tier, AvatarTier.karen);
+      expect(p595.progress, closeTo((595 - 181) / (596 - 181), 1e-9));
+
+      // 1360 is immediately below NPC threshold (1361) -> Skinny
+      final p1360 = engine.progressionFor(totalAura: 1360);
+      expect(p1360.tier, AvatarTier.skinny);
+      expect(p1360.progress, closeTo((1360 - 596) / (1361 - 596), 1e-9));
+
+      // 2903 is immediately below Sigma threshold (2904) -> NPC
+      final p2903 = engine.progressionFor(totalAura: 2903);
+      expect(p2903.tier, AvatarTier.npc);
+      expect(p2903.progress, closeTo((2903 - 1361) / (2904 - 1361), 1e-9));
+
+      // 5915 is immediately below Alpha threshold (5916) -> Sigma
+      final p5915 = engine.progressionFor(totalAura: 5915);
+      expect(p5915.tier, AvatarTier.sigma);
+      expect(p5915.progress, closeTo((5915 - 2904) / (5916 - 2904), 1e-9));
+
+      // 11564 is immediately below Gigachad threshold (11565) -> Alpha
+      final p11564 = engine.progressionFor(totalAura: 11564);
+      expect(p11564.tier, AvatarTier.alpha);
+      expect(p11564.progress, closeTo((11564 - 5916) / (11565 - 5916), 1e-9));
+
+      // 19433 is immediately below Super Saiyan threshold (19434) -> Gigachad
+      final p19433 = engine.progressionFor(totalAura: 19433);
+      expect(p19433.tier, AvatarTier.gigachad);
+      expect(p19433.progress, closeTo((19433 - 11565) / (19434 - 11565), 1e-9));
+
+      // 30264 is immediately below Super Saiyan God threshold (30265) -> Super Saiyan
+      final p30264 = engine.progressionFor(totalAura: 30264);
+      expect(p30264.tier, AvatarTier.superSaiyan);
+      expect(p30264.progress, closeTo((30264 - 19434) / (30265 - 19434), 1e-9));
+    });
+
+    test('Aura immediately above each threshold belongs to new tier with positive progress', () {
+      // 1 is immediately above Yowaimo start (0)
+      final p1 = engine.progressionFor(totalAura: 1);
+      expect(p1.tier, AvatarTier.yowaimo);
+      expect(p1.progress, closeTo(1 / 181, 1e-9));
+
+      // 182 is immediately above Karen threshold (181)
+      final p182 = engine.progressionFor(totalAura: 182);
+      expect(p182.tier, AvatarTier.karen);
+      expect(p182.progress, closeTo(1 / (596 - 181), 1e-9));
+
+      // 597 is immediately above Skinny threshold (596)
+      final p597 = engine.progressionFor(totalAura: 597);
+      expect(p597.tier, AvatarTier.skinny);
+      expect(p597.progress, closeTo(1 / (1361 - 596), 1e-9));
+
+      // 1362 is immediately above NPC threshold (1361)
+      final p1362 = engine.progressionFor(totalAura: 1362);
+      expect(p1362.tier, AvatarTier.npc);
+      expect(p1362.progress, closeTo(1 / (2904 - 1361), 1e-9));
+
+      // 2905 is immediately above Sigma threshold (2904)
+      final p2905 = engine.progressionFor(totalAura: 2905);
+      expect(p2905.tier, AvatarTier.sigma);
+      expect(p2905.progress, closeTo(1 / (5916 - 2904), 1e-9));
+
+      // 5917 is immediately above Alpha threshold (5916)
+      final p5917 = engine.progressionFor(totalAura: 5917);
+      expect(p5917.tier, AvatarTier.alpha);
+      expect(p5917.progress, closeTo(1 / (11565 - 5916), 1e-9));
+
+      // 11566 is immediately above Gigachad threshold (11565)
+      final p11566 = engine.progressionFor(totalAura: 11566);
+      expect(p11566.tier, AvatarTier.gigachad);
+      expect(p11566.progress, closeTo(1 / (19434 - 11565), 1e-9));
+
+      // 19435 is immediately above Super Saiyan threshold (19434)
+      final p19435 = engine.progressionFor(totalAura: 19435);
+      expect(p19435.tier, AvatarTier.superSaiyan);
+      expect(p19435.progress, closeTo(1 / (30265 - 19434), 1e-9));
+
+      // 30266 is beyond Super Saiyan God threshold (30265)
+      final p30266 = engine.progressionFor(totalAura: 30266);
+      expect(p30266.tier, AvatarTier.superSaiyanGod);
+      expect(p30266.progress, 1.0);
+    });
+
+    test('current-tier Aura is calculated from the previous evolution threshold', () {
+      // 300 Aura is in Karen tier (previousThreshold = 181, currentThreshold = 596)
+      final p = engine.progressionFor(totalAura: 300);
+      expect(p.tier, AvatarTier.karen);
+      expect(p.currentTierXp, 300 - 181); // 119
+      expect(p.tierTotalXp, 596 - 181); // 415
+      expect(p.progress, closeTo(119 / 415, 1e-9));
+    });
+
+    test('current tier threshold is used as the target for progress calculation', () {
+      final p = engine.progressionFor(totalAura: 181);
+      expect(p.tier, AvatarTier.karen);
+      expect(p.nextTier, AvatarTier.skinny);
+      expect(p.nextTitle, 'Skinny');
+      expect(p.tierTotalXp, 596 - 181);
+    });
+
+    test('evolution does not use task count', () {
+      // Player with 100 Aura earned (regardless of task count) is Yowaimo
+      final p1 = engine.progressionFor(totalAura: 100);
+      expect(p1.tier, AvatarTier.yowaimo);
+
+      // Player with 200 Aura earned (even from 1 big task) is Karen
+      final p2 = engine.progressionFor(totalAura: 200);
+      expect(p2.tier, AvatarTier.karen);
+    });
+
+    test('evolution does not directly use player level', () {
+      // Even if level parameter is supplied, totalAura determines the tier
+      final p = engine.progressionFor(totalAura: 596, level: 1);
+      expect(p.tier, AvatarTier.skinny);
+      expect(p.title, 'Skinny');
+    });
+
+    test('evolution progress never exceeds 100%', () {
+      for (final aura in [30265, 30266, 35000, 50000, 100000, 9999999]) {
+        final p = engine.progressionFor(totalAura: aura);
         expect(p.progress, lessThanOrEqualTo(1.0));
-        expect(p.progress.isNaN, isFalse);
-        expect(p.progress.isInfinite, isFalse);
+        expect(p.progress, 1.0);
       }
     });
 
-    test('level clamp below 1 gives level 1 Yowaimo with 0.0 progress', () {
-      final p0 = engine.progressionFor(level: 0);
-      expect(p0.level, 1);
-      expect(p0.title, 'Yowaimo');
-      expect(p0.progress, 0.0);
-
-      final pNeg = engine.progressionFor(level: -10);
-      expect(pNeg.level, 1);
-      expect(pNeg.title, 'Yowaimo');
-      expect(pNeg.progress, 0.0);
+    test('final evolution displays 100%', () {
+      final pMax = engine.progressionFor(totalAura: 30265);
+      expect(pMax.tier, AvatarTier.superSaiyanGod);
+      expect(pMax.title, 'Super Saiyan God');
+      expect(pMax.progress, 1.0);
+      expect(pMax.nextTier, isNull);
+      expect(pMax.nextTitle, isNull);
     });
   });
 
@@ -148,8 +282,9 @@ void main() {
 
       expect(find.text('Yowaimo'), findsOneWidget);
       expect(find.text('Level 1'), findsOneWidget);
-      expect(find.byKey(const Key('avatar-evolution-percent')), findsOneWidget);
-      expect(find.text('0%'), findsOneWidget);
+      final percentFinder = find.byKey(const Key('avatar-evolution-percent'));
+      expect(percentFinder, findsOneWidget);
+      expect(tester.widget<Text>(percentFinder).data, '0%');
     });
 
     testWidgets('CharacterScreen at Level 100 displays MAX LEVEL and Super Saiyan God without 101', (tester) async {
