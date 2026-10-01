@@ -96,11 +96,18 @@ class PlayerAvatar extends StatelessWidget {
               ),
             ),
             child: ClipOval(
-              child: AvatarCharacterPortrait(
-                tier: def.tier,
-                size: def.borderWidth >= 3.5 ? size - 6 : size,
-                accentColors: def.gradientColors,
-              ),
+              child: def.imagePath != null
+                  ? Image.asset(
+                      def.imagePath!,
+                      width: def.borderWidth >= 3.5 ? size - 6 : size,
+                      height: def.borderWidth >= 3.5 ? size - 6 : size,
+                      fit: BoxFit.cover,
+                    )
+                  : AvatarCharacterPortrait(
+                      tier: def.tier,
+                      size: def.borderWidth >= 3.5 ? size - 6 : size,
+                      accentColors: def.gradientColors,
+                    ),
             ),
           ),
 

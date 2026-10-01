@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'navigation/app_shell.dart';
+import 'services/notification_service.dart';
 import 'services/persistence_service.dart';
 import 'services/persistent_task_repository.dart';
 import 'services/persistent_xp_ledger.dart';
@@ -19,12 +20,14 @@ class ProRpgApp extends StatefulWidget {
     this.xpLedger,
     this.persistenceService,
     this.reminderService,
+    this.notificationService,
   });
 
   final TaskRepository? taskRepository;
   final XpLedger? xpLedger;
   final PersistenceService? persistenceService;
   final ReminderService? reminderService;
+  final NotificationService? notificationService;
 
   @override
   State<ProRpgApp> createState() => _ProRpgAppState();
@@ -45,14 +48,25 @@ class _ProRpgAppState extends State<ProRpgApp> {
     final xpLedger = widget.xpLedger ??
         PersistentXpLedger(persistenceService: persistence);
 
+    final notificationService =
+        widget.notificationService ?? NotificationService();
+
     final reminderService = widget.reminderService ??
-        ReminderService(persistenceService: persistence);
+        ReminderService(
+          persistenceService: persistence,
+          notificationService: notificationService,
+        );
 
     _taskController = TaskController(
       taskRepo,
       xpLedger: xpLedger,
       reminderService: reminderService,
     );
+
+    notificationService.initialize().catchError((e, st) {
+      debugPrint('Failed to initialize NotificationService: $e\n$st');
+      return false;
+    });
 
     if (taskRepo is PersistentTaskRepository) {
       taskRepo.loadFromPersistence().then((_) {

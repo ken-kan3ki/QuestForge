@@ -1,7 +1,10 @@
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:convert';
 
 import '../models/reminder_config.dart';
 import '../models/task.dart';
+import 'notification_service.dart';
 import 'persistence_service.dart';
 
 /// Representation of an actively scheduled local notification.
@@ -98,19 +101,26 @@ class ScheduledNotification {
 /// of local quest and settings reminders.
 class ReminderService {
   ReminderService({
-    this._persistenceService,
+    PersistenceService? persistenceService,
+    NotificationService? notificationService,
     DateTime Function()? clock,
-    this._storageKey = defaultStorageKey,
-  }) : _clock = clock ?? DateTime.now;
+    String storageKey = defaultStorageKey,
+  })  : _persistenceService = persistenceService,
+        _notificationService = notificationService,
+        _clock = clock ?? DateTime.now,
+        _storageKey = storageKey;
 
   static const String defaultStorageKey = 'pro_rpg_scheduled_reminders';
   static const String settingsReminderId = 'settings_daily_reminder';
 
   final PersistenceService? _persistenceService;
+  final NotificationService? _notificationService;
   final DateTime Function() _clock;
   final String _storageKey;
 
   final Map<String, ScheduledNotification> _scheduled = {};
+
+  NotificationService? get notificationService => _notificationService;
 
   /// Returns an unmodifiable list of all active scheduled notifications.
   List<ScheduledNotification> get scheduledNotifications =>
@@ -126,7 +136,7 @@ class ReminderService {
   /// Returns the active Settings daily reminder, if scheduled.
   ScheduledNotification? getSettingsReminder() => _scheduled[settingsReminderId];
 
-  /// Loads persisted scheduled notifications from storage.
+  /// Loads persisted scheduled notifications from storage and registers active ones with the OS notification engine.
   Future<void> loadFromPersistence() async {
     if (_persistenceService == null) return;
     final raw = await _persistenceService.getString(_storageKey);
@@ -136,112 +146,22 @@ class ReminderService {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
         _scheduled.clear();
+        final now = _clock();
         for (final item in decoded) {
           if (item is Map) {
             final notification = ScheduledNotification.fromJson(
               Map<String, dynamic>.from(item),
             );
             _scheduled[notification.id] = notification;
+            if (notification.scheduledAt.isAfter(now)) {
+              await _notificationService?.scheduleNotification(notification);
+            }
           }
         }
       }
     } catch (_) {
       // Gracefully handle any corrupt cache
     }
-  }
-
-  /// Schedules notification(s) for a given task based on its [ReminderConfig].
-  ///
-  /// Automatically cancels any prior notifications for this task before scheduling.
-  Future<void> scheduleTaskReminder(Task task) async {
-    // 1. Always cancel existing in-memory notifications for this task to avoid duplicates synchronously.
-    _cancelTaskRemindersSync(task.id);
-
-    final reminder = task.reminder;
-    if (reminder == null || !reminder.enabled) {
-      await _saveToPersistence();
-      return;
-    }
-
-    final now = _clock();
-
-    if (reminder.type == ReminderType.custom) {
-      final target = reminder.customDateTime;
-      if (target != null && target.isAfter(now)) {
-        final id = 'task_${task.id}_custom';
-        _scheduled[id] = ScheduledNotification(
-          id: id,
-          taskId: task.id,
-          title: 'Quest Reminder: ${task.title}',
-          body: task.description?.isNotEmpty == true
-              ? task.description!
-              : 'Time to forge your progress in QuestForge!',
-          scheduledAt: target,
-          type: ReminderType.custom,
-        );
-      }
-    } else if (reminder.type == ReminderType.recurring && reminder.time != null) {
-      final time = reminder.time!;
-      switch (reminder.frequency) {
-        case ReminderFrequency.daily:
-          final next = calculateNextDailyOccurrence(time, now: now);
-          final id = 'task_${task.id}_daily';
-          _scheduled[id] = ScheduledNotification(
-            id: id,
-            taskId: task.id,
-            title: 'Daily Quest: ${task.title}',
-            body: task.description?.isNotEmpty == true
-                ? task.description!
-                : 'Your daily quest awaits completion.',
-            scheduledAt: next,
-            type: ReminderType.recurring,
-            frequency: ReminderFrequency.daily,
-          );
-          break;
-
-        case ReminderFrequency.weekly:
-          for (final weekday in reminder.selectedWeekdays) {
-            final next = calculateNextWeeklyOccurrence(weekday, time, now: now);
-            final id = 'task_${task.id}_weekly_$weekday';
-            _scheduled[id] = ScheduledNotification(
-              id: id,
-              taskId: task.id,
-              title: 'Weekly Quest: ${task.title}',
-              body: task.description?.isNotEmpty == true
-                  ? task.description!
-                  : 'Weekly reminder for ${task.title}.',
-              scheduledAt: next,
-              type: ReminderType.recurring,
-              frequency: ReminderFrequency.weekly,
-              weekday: weekday,
-            );
-          }
-          break;
-
-        case ReminderFrequency.monthly:
-          final day = reminder.dayOfMonth ?? 1;
-          final next = calculateNextMonthlyOccurrence(day, time, now: now);
-          final id = 'task_${task.id}_monthly';
-          _scheduled[id] = ScheduledNotification(
-            id: id,
-            taskId: task.id,
-            title: 'Monthly Quest: ${task.title}',
-            body: task.description?.isNotEmpty == true
-                ? task.description!
-                : 'Monthly reminder for ${task.title}.',
-            scheduledAt: next,
-            type: ReminderType.recurring,
-            frequency: ReminderFrequency.monthly,
-            dayOfMonth: day,
-          );
-          break;
-
-        case null:
-          break;
-      }
-    }
-
-    await _saveToPersistence();
   }
 
   void _cancelTaskRemindersSync(String taskId) {
@@ -255,30 +175,174 @@ class ReminderService {
     }
   }
 
+  /// Schedules notification(s) for a given task based on its [ReminderConfig].
+  ///
+  /// Automatically cancels any prior notifications for this task before scheduling.
+  /// Returns `true` if permissions were granted and notification scheduled successfully, `false` otherwise.
+  Future<bool> scheduleTaskReminder(Task task) async {
+    final prefix = 'task_${task.id}_';
+    final oldIds = _scheduled.keys
+        .where((key) => key.startsWith(prefix) || _scheduled[key]?.taskId == task.id)
+        .toList();
+
+    _cancelTaskRemindersSync(task.id);
+
+    final reminder = task.reminder;
+    if (reminder == null || !reminder.enabled) {
+      for (final oldId in oldIds) {
+        await _notificationService?.cancelNotification(oldId);
+      }
+      await _saveToPersistence();
+      return true;
+    }
+
+    final now = _clock();
+    final List<ScheduledNotification> toSchedule = [];
+
+    if (reminder.type == ReminderType.custom) {
+      final target = reminder.customDateTime;
+      if (target != null && target.isAfter(now)) {
+        final id = 'task_${task.id}_custom';
+        toSchedule.add(ScheduledNotification(
+          id: id,
+          taskId: task.id,
+          title: 'Quest Reminder: ${task.title}',
+          body: task.description?.isNotEmpty == true
+              ? task.description!
+              : 'Time to forge your progress in QuestForge!',
+          scheduledAt: target,
+          type: ReminderType.custom,
+        ));
+      }
+    } else if (reminder.type == ReminderType.recurring && reminder.time != null) {
+      final time = reminder.time!;
+      switch (reminder.frequency) {
+        case ReminderFrequency.daily:
+          final next = calculateNextDailyOccurrence(time, now: now);
+          final id = 'task_${task.id}_daily';
+          toSchedule.add(ScheduledNotification(
+            id: id,
+            taskId: task.id,
+            title: 'Daily Quest: ${task.title}',
+            body: task.description?.isNotEmpty == true
+                ? task.description!
+                : 'Your daily quest awaits completion.',
+            scheduledAt: next,
+            type: ReminderType.recurring,
+            frequency: ReminderFrequency.daily,
+          ));
+          break;
+
+        case ReminderFrequency.weekly:
+          for (final weekday in reminder.selectedWeekdays) {
+            final next = calculateNextWeeklyOccurrence(weekday, time, now: now);
+            final id = 'task_${task.id}_weekly_$weekday';
+            toSchedule.add(ScheduledNotification(
+              id: id,
+              taskId: task.id,
+              title: 'Weekly Quest: ${task.title}',
+              body: task.description?.isNotEmpty == true
+                  ? task.description!
+                  : 'Weekly reminder for ${task.title}.',
+              scheduledAt: next,
+              type: ReminderType.recurring,
+              frequency: ReminderFrequency.weekly,
+              weekday: weekday,
+            ));
+          }
+          break;
+
+        case ReminderFrequency.monthly:
+          final day = reminder.dayOfMonth ?? 1;
+          final next = calculateNextMonthlyOccurrence(day, time, now: now);
+          final id = 'task_${task.id}_monthly';
+          toSchedule.add(ScheduledNotification(
+            id: id,
+            taskId: task.id,
+            title: 'Monthly Quest: ${task.title}',
+            body: task.description?.isNotEmpty == true
+                ? task.description!
+                : 'Monthly reminder for ${task.title}.',
+            scheduledAt: next,
+            type: ReminderType.recurring,
+            frequency: ReminderFrequency.monthly,
+            dayOfMonth: day,
+          ));
+          break;
+
+        case null:
+          break;
+      }
+    }
+
+    for (final notification in toSchedule) {
+      _scheduled[notification.id] = notification;
+    }
+
+    // Immediately save to persistence so state is persisted before async OS calls
+    await _saveToPersistence();
+
+    for (final oldId in oldIds) {
+      await _notificationService?.cancelNotification(oldId);
+    }
+
+    if (toSchedule.isEmpty) {
+      return true;
+    }
+
+    final hasPermission =
+        await _notificationService?.requestPermission() ?? true;
+
+    if (!hasPermission) {
+      for (final notification in toSchedule) {
+        _scheduled.remove(notification.id);
+      }
+      await _saveToPersistence();
+      return false;
+    }
+
+    for (final notification in toSchedule) {
+      await _notificationService?.scheduleNotification(notification);
+    }
+
+    return true;
+  }
+
   /// Cancels all scheduled notifications associated with [taskId].
   ///
   /// Does not affect reminders belonging to any other task or Settings.
   Future<void> cancelTaskReminders(String taskId) async {
+    final prefix = 'task_${taskId}_';
+    final toRemove = _scheduled.keys
+        .where((key) => key.startsWith(prefix) || _scheduled[key]?.taskId == taskId)
+        .toList();
+
     _cancelTaskRemindersSync(taskId);
+
     await _saveToPersistence();
+
+    for (final id in toRemove) {
+      await _notificationService?.cancelNotification(id);
+    }
   }
 
   /// Reschedules notifications when a task is edited.
-  Future<void> rescheduleTaskReminder(Task oldTask, Task newTask) async {
+  Future<bool> rescheduleTaskReminder(Task oldTask, Task newTask) async {
     await cancelTaskReminders(oldTask.id);
     if (newTask.reminder != null && newTask.reminder!.enabled) {
-      await scheduleTaskReminder(newTask);
+      return await scheduleTaskReminder(newTask);
     }
+    return true;
   }
 
   /// Schedules or updates the recurring daily Settings reminder.
   ///
   /// Uses a dedicated identifier to ensure it never interferes with task reminders.
-  Future<void> scheduleSettingsReminder(ReminderTime time) async {
+  Future<bool> scheduleSettingsReminder(ReminderTime time) async {
     final now = _clock();
     final next = calculateNextDailyOccurrence(time, now: now);
 
-    _scheduled[settingsReminderId] = ScheduledNotification(
+    final notification = ScheduledNotification(
       id: settingsReminderId,
       taskId: null,
       title: 'QuestForge Daily Check-In',
@@ -288,23 +352,41 @@ class ReminderService {
       frequency: ReminderFrequency.daily,
     );
 
+    _scheduled[settingsReminderId] = notification;
     await _saveToPersistence();
+
+    await _notificationService?.cancelNotification(settingsReminderId);
+
+    final hasPermission =
+        await _notificationService?.requestPermission() ?? true;
+
+    if (!hasPermission) {
+      _scheduled.remove(settingsReminderId);
+      await _saveToPersistence();
+      return false;
+    }
+
+    await _notificationService?.scheduleNotification(notification);
+    return true;
   }
 
   /// Cancels the Settings daily reminder.
   Future<void> cancelSettingsReminder() async {
     if (_scheduled.remove(settingsReminderId) != null) {
       await _saveToPersistence();
+      await _notificationService?.cancelNotification(settingsReminderId);
     }
   }
 
   /// Synchronizes reminders for a full list of tasks (e.g. after backup restore).
   Future<void> syncAllTaskReminders(List<Task> tasks) async {
-    // Retain settings reminder if present, clear task reminders.
-    final settingsNotification = _scheduled[settingsReminderId];
-    _scheduled.clear();
-    if (settingsNotification != null) {
-      _scheduled[settingsReminderId] = settingsNotification;
+    final taskIds = _scheduled.keys
+        .where((key) => key != settingsReminderId)
+        .toList();
+
+    for (final id in taskIds) {
+      _scheduled.remove(id);
+      await _notificationService?.cancelNotification(id);
     }
 
     for (final task in tasks) {

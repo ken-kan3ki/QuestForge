@@ -32,6 +32,7 @@ class AvatarTierDefinition {
     this.borderColor,
     this.borderWidth = 2.5,
     this.hasGlow = false,
+    this.imagePath,
   });
 
   /// The enum identifier for this tier.
@@ -66,6 +67,11 @@ class AvatarTierDefinition {
 
   /// Whether this tier displays an outer radiant glow aura.
   final bool hasGlow;
+
+  /// Optional asset path to a custom avatar image for this tier.
+  /// When non-null the avatar widget displays this image instead of the
+  /// drawn placeholder portrait.
+  final String? imagePath;
 
   /// Returns whether a given [level] falls within this tier's bounds.
   bool containsLevel(int level) {

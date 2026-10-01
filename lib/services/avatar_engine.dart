@@ -31,6 +31,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFF4A5568), Color(0xFF2D3748)],
       borderWidth: 2.0,
       hasGlow: false,
+      imagePath: 'assets/avatars/yowaimo.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.karen,
@@ -43,6 +44,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFE53E3E), Color(0xFF9B2C2C)],
       borderWidth: 2.0,
       hasGlow: false,
+      imagePath: 'assets/avatars/karen.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.skinny,
@@ -55,6 +57,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFDD6B20), Color(0xFFC05621)],
       borderWidth: 2.5,
       hasGlow: false,
+      imagePath: 'assets/avatars/skinny.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.npc,
@@ -67,6 +70,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFF718096), Color(0xFF4A5568)],
       borderWidth: 2.5,
       hasGlow: false,
+      imagePath: 'assets/avatars/npc.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.sigma,
@@ -79,6 +83,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFF2B6CB0), Color(0xFF1A365D)],
       borderWidth: 3.0,
       hasGlow: true,
+      imagePath: 'assets/avatars/sigma.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.alpha,
@@ -91,6 +96,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFC53030), Color(0xFF742A2A)],
       borderWidth: 3.5,
       hasGlow: true,
+      imagePath: 'assets/avatars/alpha.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.gigachad,
@@ -103,6 +109,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFD69E2E), Color(0xFF744210)],
       borderWidth: 3.5,
       hasGlow: true,
+      imagePath: 'assets/avatars/gigachad.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.superSaiyan,
@@ -115,6 +122,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
       borderWidth: 4.0,
       hasGlow: true,
+      imagePath: 'assets/avatars/super_saiyan.jpg',
     ),
     AvatarTierDefinition(
       tier: AvatarTier.superSaiyanGod,
@@ -127,6 +135,7 @@ class AvatarEngine {
       gradientColors: [Color(0xFFFF0055), Color(0xFFFF4500)],
       borderWidth: 5.0,
       hasGlow: true,
+      imagePath: 'assets/avatars/super_saiyan_god.jpg',
     ),
   ];
 
